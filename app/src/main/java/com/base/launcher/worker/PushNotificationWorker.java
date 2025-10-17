@@ -1,8 +1,8 @@
 /*
- * Headwind MDM: Open Source Android MDM Software
- * https://h-mdm.com
+ * Base MDM: Open Source Android MDM Software
+ * https://thebase.vn
  *
- * Copyright (C) 2019 Headwind Solutions LLC (http://h-sms.com)
+ * Copyright (C) 2019 Base Solutions LLC (http://h-sms.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,7 +94,7 @@ public class PushNotificationWorker extends Worker {
             // Note: MQTT client is automatically reconnected if connection is broken during launcher running,
             // and re-initializing it may cause looped errors
             // In particular, MQTT client is reconnected after turning Wi-Fi off and back on.
-            // Re-connection of MQTT client at Headwind MDM startup is implemented in MainActivity
+            // Re-connection of MQTT client at Base MDM startup is implemented in MainActivity
             // So by now, just request configuration update some times per day to avoid "device lost" issues
             return doMqttWork();
         } else {

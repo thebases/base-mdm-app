@@ -1,21 +1,4 @@
-<!--
-  ~ Headwind MDM: Open Source Android MDM Software
-  ~ https://h-mdm.com
-  ~
-  ~ Copyright (C) 2019 Headwind Solutions LLC (http://h-sms.com)
-  ~
-  ~ Licensed under the Apache License, Version 2.0 (the "License");
-  ~ you may not use this file except in compliance with the License.
-  ~ You may obtain a copy of the License at
-  ~
-  ~      http://www.apache.org/licenses/LICENSE-2.0
-  ~
-  ~ Unless required by applicable law or agreed to in writing, software
-  ~ distributed under the License is distributed on an "AS IS" BASIS,
-  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  ~ See the License for the specific language governing permissions and
-  ~ limitations under the License.
-  -->
+
 
 <resources>
     <string name="admin_title">Amministratore</string>
@@ -48,7 +31,7 @@
     <string name="main_activity_update_config">Richiesta file di configurazione dal server</string>
     <string name="main_activity_applications_update">Aggiornamento applicazioni</string>
     <string name="dialog_overlay_settings_title">Consenti all\'app di sovrapporre altre finestre.\n\nQuesta opzione aiuta a bloccare le app indesiderate e consente lo sblocco di emergenza della modalità chiosco.\n\nTocca \"Continua\" per aprire le impostazioni. Trova la voce \"%s\", concedi l\'autorizzazione, quindi tocca \"Indietro\".</string>
-    <string name="dialog_manage_storage_title">Consenti all\'app di gestire l\'archiviazione.\n\nQuesta opzione consente a Headwind MDM di gestire i file sul tuo dispositivo.</string>
+    <string name="dialog_manage_storage_title">Consenti all\'app di gestire l\'archiviazione.\n\nQuesta opzione consente a Base MDM di gestire i file sul tuo dispositivo.</string>
     <string name="dialog_history_settings_title">Consenti all\'app di accedere ai dati di utilizzo.\n\nQuesta opzione consente il controllo di app e impostazioni.\n\nQuesta opzione potrebbe causare un consumo più rapido della batteria. Per risparmiare batteria, salta questa opzione (usa invece i servizi di accessibilità o la modalità chiosco).\n\nTocca \"Continua\" per aprire le impostazioni. Trova la voce \"%s\", concedi l\'autorizzazione, quindi tocca \"Indietro\".</string>
     <string name="dialog_history_settings_continue">Continua</string>
     <string name="dialog_history_settings_skip">Salta</string>

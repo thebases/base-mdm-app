@@ -1,21 +1,4 @@
-<!--
-  ~ Headwind MDM: Open Source Android MDM Software
-  ~ https://h-mdm.com
-  ~
-  ~ Copyright (C) 2019 Headwind Solutions LLC (http://h-sms.com)
-  ~
-  ~ Licensed under the Apache License, Version 2.0 (the "License");
-  ~ you may not use this file except in compliance with the License.
-  ~ You may obtain a copy of the License at
-  ~
-  ~      http://www.apache.org/licenses/LICENSE-2.0
-  ~
-  ~ Unless required by applicable law or agreed to in writing, software
-  ~ distributed under the License is distributed on an "AS IS" BASIS,
-  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  ~ See the License for the specific language governing permissions and
-  ~ limitations under the License.
-  -->
+
 
 <resources>
     <string name="admin_title">Administrator</string>
@@ -49,7 +32,7 @@
     <string name="main_activity_update_config">Konfigurationsdatei vom Server anfordern</string>
     <string name="main_activity_applications_update">Aktualisieren von Anwendungen</string>
     <string name="dialog_overlay_settings_title">Bitte erlauben Sie der App, über andere Fenster zu zeichnen.\n\nDiese Option hilft, unerwünschte Apps besser zu blockieren und ermöglicht die Notentsperrung des Kioskmodus.\n\nTippen Sie auf \"Weiter\", um ein Einstellungsblatt zu öffnen. Suchen Sie das Element \"%s\", erteilen Sie die Berechtigung und tippen Sie auf \"Zurück\".</string>
-    <string name="dialog_manage_storage_title">Bitte erlauben Sie der App, den Speicher zu verwalten.\n\nDiese Option ermöglicht Headwind MDM, Dateien auf Ihrem Gerät zu verwalten.</string>
+    <string name="dialog_manage_storage_title">Bitte erlauben Sie der App, den Speicher zu verwalten.\n\nDiese Option ermöglicht Base MDM, Dateien auf Ihrem Gerät zu verwalten.</string>
     <string name="dialog_history_settings_title">Bitte erlauben Sie der App, auf Nutzungsdaten zuzugreifen.\n\nDiese Option ermöglicht die Steuerung von Apps und Einstellungen.\n\nDiese Option kann zu einer schnelleren Entladung der Batterie führen. Um Batterie zu sparen, überspringen Sie diese Option (verwenden Sie stattdessen die Bedienungshilfen oder den Kioskmodus).\n\nTippen Sie auf \"Weiter\", um ein Einstellungsblatt zu öffnen. Suchen Sie das Element \"%s\", erteilen Sie die Berechtigung und tippen Sie auf \"Zurück\".</string>
     <string name="dialog_history_settings_continue">Weiter</string>
     <string name="dialog_history_settings_skip">Überspringen</string>

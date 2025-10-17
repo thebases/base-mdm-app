@@ -1,8 +1,8 @@
 /*
- * Headwind MDM: Open Source Android MDM Software
- * https://h-mdm.com
+ * Base MDM: Open Source Android MDM Software
+ * https://thebase.vn
  *
- * Copyright (C) 2019 Headwind Solutions LLC (http://h-sms.com)
+ * Copyright (C) 2019 Base Solutions LLC (http://h-sms.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -106,7 +106,7 @@ public class Utils {
                     }
                 }
                 // This permission is dangerous and causes blocking by Play Protect in some countries.
-                //     In fact, this permission is currently never used by Headwind MDM.
+                //     In fact, this permission is currently never used by Base MDM.
 //                if (devicePolicyManager.getPermissionGrantState(adminComponentName,
 //                        context.getPackageName(), Manifest.permission.READ_SMS) != DevicePolicyManager.PERMISSION_GRANT_STATE_GRANTED) {
 //                    boolean success = devicePolicyManager.setPermissionGrantState(adminComponentName,
@@ -160,7 +160,7 @@ public class Utils {
             // Some devices do not include SD card permissions in the list of runtime permissions
             // So the files could not be read or written.
             // Here we add SD card permissions manually (device owner can grant them!)
-            // This is done for the Headwind MDM launcher only
+            // This is done for the Base MDM launcher only
             if (forceSdCardPermissions) {
                 boolean hasReadExtStorage = false;
                 boolean hasWriteExtStorage = false;
@@ -234,7 +234,7 @@ public class Utils {
                 }
             }
             // There's a bug in Android 11+: MANAGE_EXTERNAL_STORAGE can't be automatically granted
-            // but if Headwind MDM is granting WRITE_EXTERNAL_STORAGE, then the app can't request
+            // but if Base MDM is granting WRITE_EXTERNAL_STORAGE, then the app can't request
             // MANAGE_EXTERNAL_STORAGE, it's locked!
             // So the workaround is do not request WRITE_EXTERNAL_STORAGE in this case
             if (manageStorage && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -830,7 +830,7 @@ public class Utils {
         filter.addCategory(Intent.CATEGORY_DEFAULT);
 
         ComponentName activity = new ComponentName(context, MainActivity.class);
-        setPreferredActivity(context, filter, activity, "Set Headwind MDM as default launcher");
+        setPreferredActivity(context, filter, activity, "Set Base MDM as default launcher");
     }
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)

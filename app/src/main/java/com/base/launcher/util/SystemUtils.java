@@ -20,7 +20,7 @@ import java.lang.reflect.Method;
 
 /**
  * These utils are used only in the 'system' flavor
- * when Headwind MDM is installed as a system app and
+ * when Base MDM is installed as a system app and
  * signed by OS keys
  */
 public class SystemUtils {
@@ -33,9 +33,9 @@ public class SystemUtils {
      * The device owner can only be set before the setup phase of the primary user has completed,
      * except for adb command if no accounts or additional users are present on the device.
      *
-     * So it looks like Headwind MDM can never declare itself as a device owner,
+     * So it looks like Base MDM can never declare itself as a device owner,
      * except when it is running from inside a setup wizard (or declares itself as a setup wizard!)
-     * To become a setup wizard, Headwind MDM should be preinstalled in the system, and
+     * To become a setup wizard, Base MDM should be preinstalled in the system, and
      * handle the following intent: android.intent.action.DEVICE_INITIALIZATION_WIZARD
      *
      * @param context

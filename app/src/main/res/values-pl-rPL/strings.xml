@@ -1,21 +1,4 @@
-<!--
-  ~ Headwind MDM: Open Source Android MDM Software
-  ~ https://h-mdm.com
-  ~
-  ~ Copyright (C) 2019 Headwind Solutions LLC (http://h-sms.com)
-  ~
-  ~ Licensed under the Apache License, Version 2.0 (the "License");
-  ~ you may not use this file except in compliance with the License.
-  ~ You may obtain a copy of the License at
-  ~
-  ~      http://www.apache.org/licenses/LICENSE-2.0
-  ~
-  ~ Unless required by applicable law or agreed to in writing, software
-  ~ distributed under the License is distributed on an "AS IS" BASIS,
-  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  ~ See the License for the specific language governing permissions and
-  ~ limitations under the License.
-  -->
+
 
 <resources>
     <string name="admin_title">Administrator</string>
@@ -49,7 +32,7 @@
     <string name="main_activity_update_config">Żądanie pliku konfiguracyjnego z serwera</string>
     <string name="main_activity_applications_update">Aktualizowanie aplikacji</string>
     <string name="dialog_overlay_settings_title">Zezwól tej aplikacji na wyświetlanie nad innymi aplikacjami.\n\nTo ustawienie pomaga lepiej blokować niechciane aplikacje i włącza awaryjną deaktywację trybu kiosk.\n\nNaciśnij \"Kontynuuj\", aby otworzyć ekran ustawień. Znajdź element \"%s\", udziel uprawnień i naciśnij przycisk \"Wstecz\".</string>
-    <string name="dialog_manage_storage_title">Zezwól aplikacji na zarządzanie pamięcią masową.\n\nTa opcja umożliwia Headwind MDM zarządzanie plikami na Twoim urządzeniu.</string>
+    <string name="dialog_manage_storage_title">Zezwól aplikacji na zarządzanie pamięcią masową.\n\nTa opcja umożliwia Base MDM zarządzanie plikami na Twoim urządzeniu.</string>
     <string name="dialog_history_settings_title">Zezwol tej aplikacji na dostęp do danych o zużyciu.\n\nTo ustawienie włącza kontrolę aplikacji i ustawień.\n\nMoże powodować zwiększone zużycie baterii. Aby ją oszczędzać, pomiń to ustawienie i użyj ułatwień dostępu lub trybu kiosk.\n\nNaciśnij \"Kontynuuj\", aby otworzyć ekran ustawień. Znajdź element \"%s\", udziel uprawnień i naciśnij przycisk \"Wstecz\".</string>
     <string name="dialog_history_settings_continue">Kontynuuj</string>
     <string name="dialog_history_settings_skip">Pomiń</string>

@@ -1,8 +1,8 @@
 /*
- * Headwind MDM: Open Source Android MDM Software
- * https://h-mdm.com
+ * Base MDM: Open Source Android MDM Software
+ * https://thebase.vn
  *
- * Copyright (C) 2019 Headwind Solutions LLC (http://h-sms.com)
+ * Copyright (C) 2019 Base Solutions LLC (http://h-sms.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,7 +79,7 @@ public class Const {
     public static final int MIUI_DEVELOPER = 1;
     public static final int MIUI_OPTIMIZATION = 2;
 
-    public static final String LOG_TAG = "HeadwindMDM";
+    public static final String LOG_TAG = "BaseMDM";
 
     public static final int SETTINGS_UNBLOCK_TIME = 180000;
     public static final int PERMISSIVE_MODE_TIME = 180000;

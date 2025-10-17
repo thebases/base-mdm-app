@@ -17,27 +17,27 @@ import java.net.URL;
 import dalvik.system.PathClassLoader;
 
 /**
- * Higher level Headwind MDM integration API incapsulating reconnection to the service and configuration update
+ * Higher level Base MDM integration API incapsulating reconnection to the service and configuration update
  */
-public class HeadwindMDM {
+public class BaseMDM {
 
     public interface EventHandler {
-        // This method is called when Headwind MDM is ready to answer
+        // This method is called when Base MDM is ready to answer
         // Get your app settings in this method using MDMService.Preferences.get()
-        void onHeadwindMDMConnected();
+        void onBaseMDMConnected();
         // This is just an informative method which doesn't need any actions
         // It should be followed by Connected() method shortly
-        void onHeadwindMDMDisconnected();
+        void onBaseMDMDisconnected();
         // Notification about the configuration change
         // Refresh your app settings in this method using MDMService.Preferences.get()
-        void onHeadwindMDMConfigChanged();
+        void onBaseMDMConfigChanged();
     }
 
-    private static HeadwindMDM instance;
+    private static BaseMDM instance;
 
-    public static HeadwindMDM getInstance() {
+    public static BaseMDM getInstance() {
         if (instance == null) {
-            instance = new HeadwindMDM();
+            instance = new BaseMDM();
         }
         return instance;
     }
@@ -68,7 +68,7 @@ public class HeadwindMDM {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (intent.getAction().equals(Const.NOTIFICATION_CONFIG_UPDATED) && eventHandler != null) {
-                eventHandler.onHeadwindMDMConfigChanged();
+                eventHandler.onBaseMDMConfigChanged();
             }
         }
     };
@@ -78,10 +78,10 @@ public class HeadwindMDM {
     }
 
     /**
-     * Connect to Headwind MDM service
+     * Connect to Base MDM service
      * @param context
      * @param eventHandler
-     * @return true if Headwind MDM exists, false otherwise
+     * @return true if Base MDM exists, false otherwise
      */
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     public boolean connect(final Context context, final EventHandler eventHandler) {
@@ -291,7 +291,7 @@ public class HeadwindMDM {
                     throw new MDMException(MDMError.ERROR_NOT_CONFIGURED);
                 }
 
-                // NPE can be here! queryConfig() may return null if Headwind MDM
+                // NPE can be here! queryConfig() may return null if Base MDM
                 // is not configured. Not sure how to handle this, though
                 serverHost = data.getString(MDMService.KEY_SERVER_HOST);
                 secondaryServerHost = data.getString(MDMService.KEY_SECONDARY_SERVER_HOST);
@@ -311,17 +311,17 @@ public class HeadwindMDM {
             }
 
             if (eventHandler != null) {
-                eventHandler.onHeadwindMDMConnected();
+                eventHandler.onBaseMDMConnected();
             }
         }
 
         @Override
         public void onMDMDisconnected() {
-            // This may be raised when Headwind MDM launcher is updated or due to a launcher crash
+            // This may be raised when Base MDM launcher is updated or due to a launcher crash
             mdmConnected = false;
             if (mustRun) {
                 if (eventHandler != null) {
-                    eventHandler.onHeadwindMDMDisconnected();
+                    eventHandler.onBaseMDMDisconnected();
                 }
                 new Handler().postDelayed(new MDMReconnectRunnable(), Const.HMDM_RECONNECT_DELAY_FIRST);
             }

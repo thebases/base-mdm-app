@@ -9,7 +9,7 @@ class Const {
     public static final String INTENT_PUSH_NOTIFICATION_PREFIX = "com.base.push.";
     public static final String INTENT_PUSH_NOTIFICATION_EXTRA = "com.base.PUSH_DATA";
 
-    public static final String LOG_TAG ="HeadwindMDMAPI";
+    public static final String LOG_TAG ="BaseMDMAPI";
 
     public static final String NOTIFICATION_CONFIG_UPDATED = "com.base.push.configUpdated";
 

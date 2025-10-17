@@ -1,8 +1,8 @@
 /*
- * Headwind MDM: Open Source Android MDM Software
- * https://h-mdm.com
+ * Base MDM: Open Source Android MDM Software
+ * https://thebase.vn
  *
- * Copyright (C) 2019 Headwind Solutions LLC (http://h-sms.com)
+ * Copyright (C) 2019 Base Solutions LLC (http://h-sms.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -166,7 +166,7 @@ public class InstallUtils {
         return false;
     }
 
-    // Free and full versions of Headwind MDM launcher have the same version name but different version codes
+    // Free and full versions of Base MDM launcher have the same version name but different version codes
     // This is a dirty hack determining the full version by the URL
     // It's however better to use different versions, for example 5.16.1 for free and 5.16.2 for full
     private static boolean upgradingHmdmFreeToFull(Context context, Application application, PackageInfo packageInfo) {
@@ -283,7 +283,7 @@ public class InstallUtils {
                             // This means, a file was created by a third party
                             // We overwrite the file (and save the entry in the database after overwriting in ConfigUpdater.loadAndInstallFiles())
                             remoteFileDb.getLastUpdate() < remoteFile.getLastUpdate()) {
-                        // File has been already downloaded by Headwind MDM,
+                        // File has been already downloaded by Base MDM,
                         // let's check lastUpdate (checksum is not reliable because of possible variable content)
                         // We only overwrite a file if the file on the server is newer than the file on the device
                         // (on the device, we save the lastUpdate from the server, we don't check the actual file update date)

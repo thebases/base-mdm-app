@@ -1,8 +1,8 @@
 /*
- * Headwind MDM: Open Source Android MDM Software
- * https://h-mdm.com
+ * Base MDM: Open Source Android MDM Software
+ * https://thebase.vn
  *
- * Copyright (C) 2019 Headwind Solutions LLC (http://h-sms.com)
+ * Copyright (C) 2019 Base Solutions LLC (http://h-sms.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,7 +65,7 @@ public class MDMService {
     /**
      * Connect to the MDM service
      * @param handler
-     * @return true on success and false if no Headwind MDM installed
+     * @return true on success and false if no Base MDM installed
      */
     public boolean connect(Context context, ResultHandler handler) {
         this.context = context;
@@ -228,7 +228,7 @@ public class MDMService {
                 String finalMessage = tag != null ? tag + " " + message : message;
                 instance.mdmApi.log(System.currentTimeMillis(), level, instance.context.getPackageName(), finalMessage);
             } catch (Exception e) {
-                android.util.Log.w(Const.LOG_TAG, "Remote exception while trying to send a log to Headwind MDM!");
+                android.util.Log.w(Const.LOG_TAG, "Remote exception while trying to send a log to Base MDM!");
                 e.printStackTrace();
             }
         }
@@ -264,7 +264,7 @@ public class MDMService {
         public static String get(String attr, String defValue) {
             if (instance == null || instance.mdmApi == null || instance.context == null) {
                 // Not initialized, just return
-                android.util.Log.w(Const.LOG_TAG, "Connection to Headwind MDM not initialized!");
+                android.util.Log.w(Const.LOG_TAG, "Connection to Base MDM not initialized!");
                 return defValue;
             }
             try {
@@ -274,7 +274,7 @@ public class MDMService {
                 }
                 return result;
             } catch (Exception e) {
-                android.util.Log.w(Const.LOG_TAG, "Remote exception while trying to get Headwind MDM app preference " + attr);
+                android.util.Log.w(Const.LOG_TAG, "Remote exception while trying to get Base MDM app preference " + attr);
                 e.printStackTrace();
             }
             return defValue;
@@ -283,12 +283,12 @@ public class MDMService {
         public static boolean set(String attr, String value) {
             if (instance == null || instance.mdmApi == null || instance.context == null) {
                 // Not initialized, just return
-                android.util.Log.w(Const.LOG_TAG, "Connection to Headwind MDM not initialized!");
+                android.util.Log.w(Const.LOG_TAG, "Connection to Base MDM not initialized!");
             }
             try {
                 return instance.mdmApi.setAppPreference(instance.context.getPackageName(), attr, value);
             } catch (Exception e) {
-                android.util.Log.w(Const.LOG_TAG, "Remote exception while trying to set Headwind MDM app preference " + attr + "=" + value);
+                android.util.Log.w(Const.LOG_TAG, "Remote exception while trying to set Base MDM app preference " + attr + "=" + value);
                 e.printStackTrace();
             }
             return false;
@@ -297,13 +297,13 @@ public class MDMService {
         public static void apply() {
             if (instance == null || instance.mdmApi == null || instance.context == null) {
                 // Not initialized, just return
-                android.util.Log.w(Const.LOG_TAG, "Connection to Headwind MDM not initialized!");
+                android.util.Log.w(Const.LOG_TAG, "Connection to Base MDM not initialized!");
                 return;
             }
             try {
                 instance.mdmApi.commitAppPreferences(instance.context.getPackageName());
             } catch (Exception e) {
-                android.util.Log.w(Const.LOG_TAG, "Remote exception while trying to apply Headwind MDM app preferences!");
+                android.util.Log.w(Const.LOG_TAG, "Remote exception while trying to apply Base MDM app preferences!");
                 e.printStackTrace();
             }
         }

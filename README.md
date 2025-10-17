@@ -1,4 +1,4 @@
-# Headwind MDM: free and open-source MDM launcher
+# Base MDM: free and open-source MDM launcher
 
 A Powerful Open Source Platform to Manage your Enterprise Android Devices
 

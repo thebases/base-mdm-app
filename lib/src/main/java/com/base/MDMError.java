@@ -1,8 +1,8 @@
 /*
- * Headwind MDM: Open Source Android MDM Software
- * https://h-mdm.com
+ * Base MDM: Open Source Android MDM Software
+ * https://thebase.vn
  *
- * Copyright (C) 2019 Headwind Solutions LLC (http://h-sms.com)
+ * Copyright (C) 2019 Base Solutions LLC (http://h-sms.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,9 +33,9 @@ public class MDMError {
             case NO_ERROR:
                 return "";
             case ERROR_NO_MDM:
-                return "Headwind MDM not installed";
+                return "Base MDM not installed";
             case ERROR_INTERNAL:
-                return "Internal Headwind MDM error";
+                return "Internal Base MDM error";
             case ERROR_GENERAL:
                 return "General error";
             case ERROR_DISCONNECTED:
@@ -43,7 +43,7 @@ public class MDMError {
             case ERROR_INVALID_PARAMETER:
                 return "Invalid parameter";
             case ERROR_VERSION:
-                return "Please update Headwind MDM launcher";
+                return "Please update Base MDM launcher";
             case ERROR_KEY_NOT_MATCH:
                 return "API key is not correct";
             case ERROR_NOT_CONFIGURED:
@@ -58,12 +58,12 @@ public class MDMError {
     }
 
     public static final int NO_ERROR = 0;
-    public static final int ERROR_NO_MDM = 1;           // Headwind MDM not installed
+    public static final int ERROR_NO_MDM = 1;           // Base MDM not installed
     public static final int ERROR_INTERNAL = 2;         // Launcher internal error
     public static final int ERROR_GENERAL = 3;          // Library error
     public static final int ERROR_DISCONNECTED = 4;     // Service disconnected
     public static final int ERROR_INVALID_PARAMETER = 5;
     public static final int ERROR_VERSION = 6;          // Launcher needs to update
     public static final int ERROR_KEY_NOT_MATCH = 7;    // API key does not match
-    public static final int ERROR_NOT_CONFIGURED = 8;  // Headwind MDM is not configured
+    public static final int ERROR_NOT_CONFIGURED = 8;  // Base MDM is not configured
 }

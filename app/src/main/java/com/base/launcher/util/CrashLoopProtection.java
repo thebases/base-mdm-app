@@ -8,7 +8,7 @@ import com.base.launcher.Const;
 
 public class CrashLoopProtection {
     // Crash loop protection
-    // We consider it to be an unrecoverable fault if Headwind MDM crashes 5 times or more within a minute
+    // We consider it to be an unrecoverable fault if Base MDM crashes 5 times or more within a minute
     private static final long LOOP_TIME_SPAN = 60000;
     private static final long LOOP_CRASHES = 3;
     private static final String FAULT_PREFERENCE_NAME = "com.base.launcher.fault";

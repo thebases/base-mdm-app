@@ -25,9 +25,9 @@ public class BootReceiver extends BroadcastReceiver {
         long bootTime = System.currentTimeMillis() - android.os.SystemClock.elapsedRealtime();
         Log.d(Const.LOG_TAG, "appStartTime=" + lastAppStartTime + ", bootTime=" + bootTime);
         if (lastAppStartTime < bootTime) {
-            Log.i(Const.LOG_TAG, "Headwind MDM wasn't started since boot, start initializing services");
+            Log.i(Const.LOG_TAG, "Base MDM wasn't started since boot, start initializing services");
         } else {
-            Log.i(Const.LOG_TAG, "Headwind MDM is already started, ignoring BootReceiver");
+            Log.i(Const.LOG_TAG, "Base MDM is already started, ignoring BootReceiver");
             return;
         }
 
@@ -36,7 +36,7 @@ public class BootReceiver extends BroadcastReceiver {
 
             SettingsHelper.getInstance(context).setMainActivityRunning(false);
             if (ProUtils.kioskModeRequired(context)) {
-                Log.i(Const.LOG_TAG, "Kiosk mode required, forcing Headwind MDM to run in the foreground");
+                Log.i(Const.LOG_TAG, "Kiosk mode required, forcing Base MDM to run in the foreground");
                 // If kiosk mode is required, then we just simulate clicking Home and starting MainActivity
                 Intent homeIntent = new Intent(Intent.ACTION_MAIN);
                 homeIntent.addCategory(Intent.CATEGORY_HOME);
