@@ -28,8 +28,8 @@ import androidx.work.WorkManager;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
-import com.hmdm.launcher.Const;
-import com.hmdm.launcher.util.RemoteLogger;
+import com.base.launcher.Const;
+import com.base.launcher.util.RemoteLogger;
 
 import org.eclipse.paho.client.mqttv3.MqttPingSender;
 import org.eclipse.paho.client.mqttv3.internal.ClientComms;
@@ -41,7 +41,7 @@ public class WorkerPingSender implements MqttPingSender {
     // Identifier for Intents, log messages, etc..
     private static final String TAG = "WorkerPingSender";
 
-    private static final String WORKER_TAG_MQTT = "com.hmdm.launcher.WORK_TAG_MQTT";
+    private static final String WORKER_TAG_MQTT = "com.base.launcher.WORK_TAG_MQTT";
 
     private ClientComms comms;
     private MqttService service;

@@ -35,14 +35,14 @@ import android.os.PowerManager.WakeLock;
 import androidx.core.app.NotificationCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
-import com.hmdm.launcher.BuildConfig;
-import com.hmdm.launcher.Const;
-import com.hmdm.launcher.R;
-import com.hmdm.launcher.helper.SettingsHelper;
-import com.hmdm.launcher.pro.ProUtils;
-import com.hmdm.launcher.util.PushNotificationMqttWrapper;
-import com.hmdm.launcher.util.RemoteLogger;
-import com.hmdm.launcher.util.Utils;
+import com.base.launcher.BuildConfig;
+import com.base.launcher.Const;
+import com.base.launcher.R;
+import com.base.launcher.helper.SettingsHelper;
+import com.base.launcher.pro.ProUtils;
+import com.base.launcher.util.PushNotificationMqttWrapper;
+import com.base.launcher.util.RemoteLogger;
+import com.base.launcher.util.Utils;
 
 import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;

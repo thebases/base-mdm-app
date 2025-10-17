@@ -32,7 +32,7 @@ repositories {
 android {
     compileSdkVersion 34
     defaultConfig {
-        applicationId "com.hmdm.launcher"
+        applicationId "com.base.launcher"
         minSdkVersion 16
         targetSdkVersion 34
         versionCode 15260
@@ -45,7 +45,7 @@ android {
             aidl true
             buildConfig = true
         }
-        namespace 'com.hmdm.launcher'
+        namespace 'com.base.launcher'
         multiDexEnabled true
 
         // Default URL of the web panel (scheme + host!)
@@ -63,11 +63,11 @@ android {
         // Enables Push notifications. Setting it to false will stop automatic configuration updates after changing it on the server.
         buildConfigField("Boolean", "ENABLE_PUSH", "true")
         // MQTT port for Push notifications
-        buildConfigField("String", "MQTT_DOMAIN", "\"ipn.beanbakery.vn\"")
+        buildConfigField("String", "MQTT_DOMAIN", "\"mqtt.thebase.vn\"")
         buildConfigField("Integer", "MQTT_PORT", "18883")
         buildConfigField("Boolean", "MQTT_TLS", "true")
-        buildConfigField("String", "MQTT_USERNAME", "\"atom\"")
-        buildConfigField("String", "MQTT_PASSWORD", "\"12345678\"")
+        buildConfigField("String", "MQTT_USERNAME", "\"basemdm\"")
+        buildConfigField("String", "MQTT_PASSWORD", "\"theBase15112023@\"")
         // Set this parameter to true if you'll grant system privileges to Headwind MDM (signing it by system keys).
         // This will enable silent installation and the launcher will try to get the device owner rights by updating system files.
         // This may be useful, for example, when your device doesn't have QR code provisioning capability.

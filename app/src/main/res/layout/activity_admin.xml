@@ -27,7 +27,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        tools:context="com.hmdm.launcher.ui.AdminActivity"
+        tools:context="com.base.launcher.ui.AdminActivity"
         android:gravity="center_horizontal">
 
         <androidx.appcompat.widget.Toolbar

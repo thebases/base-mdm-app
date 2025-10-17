@@ -29,7 +29,7 @@ import android.util.SparseArray;
 
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
-import com.hmdm.launcher.BuildConfig;
+import com.base.launcher.BuildConfig;
 
 import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions;
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;

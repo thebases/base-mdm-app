@@ -30,7 +30,7 @@
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:context="com.hmdm.launcher.ui.ErrorDetailsActivity">
+        tools:context="com.base.launcher.ui.ErrorDetailsActivity">
 
         <EditText
             android:id="@+id/editMessage"
