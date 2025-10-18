@@ -41,7 +41,7 @@ android {
         // "user" - user enters it manually
         // "suggest" - user can select among few predefined values (IMEI, serial, MAC)
         // "imei", "serial", "mac" - set the selected parameter as device ID without user interaction
-        buildConfigField("String", "DEVICE_ID_CHOICE", "\"user\"")
+        buildConfigField("String", "DEVICE_ID_CHOICE", "\"suggest\"")
         // Enables Push notifications. Setting it to false will stop automatic configuration updates after changing it on the server.
         buildConfigField("Boolean", "ENABLE_PUSH", "true")
         // MQTT port for Push notifications

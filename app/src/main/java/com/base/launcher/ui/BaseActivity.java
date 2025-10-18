@@ -181,10 +181,6 @@ public class BaseActivity extends AppCompatActivity {
         }
     }
 
-    public static String convertToOld(String s)
-    {
-        return  s.replace("com.base","com.hmdm");
-    }
     protected void updateSettingsFromQr(String qrcode) {
         try {
             Log.d(Const.LOG_TAG, "Get initial settings from the QR code");
@@ -192,7 +188,7 @@ public class BaseActivity extends AppCompatActivity {
             JSONObject qr = new JSONObject(qrcode);
             JSONObject extras = qr.getJSONObject(DevicePolicyManager.EXTRA_PROVISIONING_ADMIN_EXTRAS_BUNDLE);
 
-            String deviceId = extras.optString(convertToOld(Const.QR_DEVICE_ID_ATTR), null);
+            String deviceId = extras.optString(Const.QR_DEVICE_ID_ATTR, null);
             if (deviceId == null) {
                 // Also let's try legacy attribute
                 deviceId = extras.optString(Const.QR_LEGACY_DEVICE_ID_ATTR, null);
@@ -202,7 +198,7 @@ public class BaseActivity extends AppCompatActivity {
                 settingsHelper.setDeviceId(deviceId);
             } else {
                 Log.d(Const.LOG_TAG, "Device ID is null");
-                String deviceIdUse = extras.optString(convertToOld(Const.QR_DEVICE_ID_USE_ATTR), null);
+                String deviceIdUse = extras.optString(Const.QR_DEVICE_ID_USE_ATTR, null);
                 if (deviceIdUse != null) {
                     Log.d(Const.LOG_TAG, "Device ID use: " + deviceIdUse);
                     // Save for further automatic choice of the device ID
@@ -210,8 +206,8 @@ public class BaseActivity extends AppCompatActivity {
                 }
             }
 
-            String baseUrl = extras.optString(convertToOld(Const.QR_BASE_URL_ATTR), null);
-            String secondaryBaseUrl = extras.optString(convertToOld(Const.QR_SECONDARY_BASE_URL_ATTR), null);
+            String baseUrl = extras.optString(Const.QR_BASE_URL_ATTR, null);
+            String secondaryBaseUrl = extras.optString(Const.QR_SECONDARY_BASE_URL_ATTR, null);
             if (baseUrl != null) {
                 Log.d(Const.LOG_TAG, "Base URL: " + baseUrl);
                 settingsHelper.setBaseUrl(baseUrl);
@@ -225,16 +221,16 @@ public class BaseActivity extends AppCompatActivity {
                 settingsHelper.setSecondaryBaseUrl(secondaryBaseUrl);
             }
 
-            String serverProject = extras.optString(convertToOld(Const.QR_SERVER_PROJECT_ATTR), null);
+            String serverProject = extras.optString(Const.QR_SERVER_PROJECT_ATTR, null);
             if (serverProject != null) {
                 Log.d(Const.LOG_TAG, "Project path: " + serverProject);
                 settingsHelper.setServerProject(serverProject);
             }
 
             DeviceEnrollOptions createOptions = new DeviceEnrollOptions();
-            createOptions.setCustomer(extras.optString(convertToOld(Const.QR_CUSTOMER_ATTR), null));
-            createOptions.setConfiguration(extras.optString(convertToOld(Const.QR_CONFIG_ATTR), null));
-            createOptions.setGroups(extras.optString(convertToOld(Const.QR_GROUP_ATTR), null));
+            createOptions.setCustomer(extras.optString(Const.QR_CUSTOMER_ATTR, null));
+            createOptions.setConfiguration(extras.optString(Const.QR_CONFIG_ATTR, null));
+            createOptions.setGroups(extras.optString(Const.QR_GROUP_ATTR, null));
             if (createOptions.getCustomer() != null) {
                 Log.d(Const.LOG_TAG, "Customer: " + createOptions.getCustomer());
                 settingsHelper.setEnrollOptionCustomer(createOptions.getCustomer());

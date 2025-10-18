@@ -125,10 +125,10 @@ public class PushNotificationProcessor {
         }
 
         // Send broadcast to all plugins
-        Intent intent = new Intent(BaseActivity.convertToOld(Const.INTENT_PUSH_NOTIFICATION_PREFIX + message.getMessageType()));
+        Intent intent = new Intent(Const.INTENT_PUSH_NOTIFICATION_PREFIX + message.getMessageType());
         JSONObject jsonObject = message.getPayloadJSON();
         if (jsonObject != null) {
-            intent.putExtra(BaseActivity.convertToOld( Const.INTENT_PUSH_NOTIFICATION_EXTRA), jsonObject.toString());
+            intent.putExtra( Const.INTENT_PUSH_NOTIFICATION_EXTRA, jsonObject.toString());
         }
         context.sendBroadcast(intent);
     }
