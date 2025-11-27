@@ -13,4 +13,4 @@ Scaling of your business requires proper management. The MDM software is a smart
 
 * Remote support simplifies the IT manager’s work to resolve issues and correct faults.
 
-Base MDM requires registration on a Base MDM server.  You can deploy your own (https://thebase.vn/download/) or try the demo (https://srv.h-mdm.com). See the Base MDM documentation for more information.
+Base MDM requires registration on a Base MDM server.  You can deploy your own (https://thebase.vn/download/). See the Base MDM documentation for more information.

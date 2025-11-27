@@ -1,24 +1,25 @@
 
 buildscript {
     repositories {
-        jcenter()
+        google()
+        mavenCentral()
     }
 }
 apply plugin: 'com.android.application'
 
 repositories {
-    jcenter()
+    google()
     mavenCentral()
 }
 
 android {
-    compileSdkVersion 34
+    compileSdk 34
     defaultConfig {
         applicationId "com.base.launcher"
-        minSdkVersion 21
-        targetSdkVersion 34
-        versionCode 15260
-        versionName "6.26"
+        minSdk 24
+        targetSdk 34
+        versionCode 1000
+        versionName '1.0.0.0'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         dataBinding {
             enabled = true
@@ -31,10 +32,10 @@ android {
         multiDexEnabled true
 
         // Default URL of the web panel (scheme + host!)
-        buildConfigField("String", "BASE_URL", "\"https://mdm.thebase.vn\"")
+        buildConfigField("String", "BASE_URL", "\"https://mdm.thebeanfamily.org\"")
         // URL of the secondary address of your web panel, called when the primary host is not available.
         // Could be equal to the BASE_URL parameter
-        buildConfigField("String", "SECONDARY_BASE_URL", "\"https://mdm.thebase.vn\"")
+        buildConfigField("String", "SECONDARY_BASE_URL", "\"https://mdm.thebeanfamily.org\"")
         // Relative path of the web panel on the server. Keep it empty if installed in the root
         buildConfigField("String", "SERVER_PROJECT", "\"\"")
         // This parameter manages how the device ID should be set up at first start
@@ -45,15 +46,16 @@ android {
         // Enables Push notifications. Setting it to false will stop automatic configuration updates after changing it on the server.
         buildConfigField("Boolean", "ENABLE_PUSH", "true")
         // MQTT port for Push notifications
-        buildConfigField("String", "MQTT_DOMAIN", "\"mqtt.thebase.vn\"")
-        buildConfigField("Integer", "MQTT_PORT", "18883")
-        buildConfigField("Boolean", "MQTT_TLS", "true")
+        buildConfigField("String", "MQTT_DOMAIN", "\"62.146.233.40\"")
+        buildConfigField("Integer", "MQTT_PORT", "11883")
+        buildConfigField("Boolean", "MQTT_TLS", "false")
+        buildConfigField("Integer", "MQTT_QOS", "1")
         buildConfigField("String", "MQTT_USERNAME", "\"basemdm\"")
         buildConfigField("String", "MQTT_PASSWORD", "\"theBase15112023@\"")
         // Set this parameter to true if you'll grant system privileges to Base MDM (signing it by system keys).
         // This will enable silent installation and the launcher will try to get the device owner rights by updating system files.
         // This may be useful, for example, when your device doesn't have QR code provisioning capability.
-        buildConfigField("Boolean", "SYSTEM_PRIVILEGES", "false")
+        buildConfigField("Boolean", "SYSTEM_PRIVILEGES", "true")
         // Set this parameter to true if you'd like to trust every certificate, for example, self-signed
         // Not recommended for security purposes!
         buildConfigField("Boolean", "TRUST_ANY_CERTIFICATE", "false")
@@ -68,7 +70,7 @@ android {
         // See the related "if" statement in MainActivity.java
         buildConfigField("Boolean", "REQUEST_SERVER_URL", "true")
         // Set to true to debug admin receiver via remote logging
-        buildConfigField("Boolean", "DEVICE_ADMIN_DEBUG", "false")
+        buildConfigField("Boolean", "DEVICE_ADMIN_DEBUG", "true")
         // Set to true to enable kiosk mode even if the app can't draw over other windows
         // This may be required for weak devices where drawing over other windows is disabled by OS
         buildConfigField("Boolean", "ENABLE_KIOSK_WITHOUT_OVERLAYS", "false")
@@ -76,32 +78,43 @@ android {
         buildConfigField("Boolean", "MQTT_SERVICE_FOREGROUND", "true")
         // Set Base MDM to default launcher at early time of the first start
         // to prevent the user from clicking Home and stop initializing Base MDM
-        buildConfigField("Boolean", "SET_DEFAULT_LAUNCHER_EARLY", "false")
+        buildConfigField("Boolean", "SET_DEFAULT_LAUNCHER_EARLY", "true")
         // Adjust application selection on TV boxes
         buildConfigField("Boolean", "SELECTED_ITEM_BY_CLICK", "false")
         // Adjust application selection on TV boxes
         buildConfigField("Boolean", "DISABLE_ORIENTATION_LOCK", "false")
         // API key for the authorization of privileged library requests
-        buildConfigField("String", "LIBRARY_API_KEY", "\"changeme-8gzk321W\"")
+        buildConfigField("String", "LIBRARY_API_KEY", "\"068bd957181f91076e962a61c8788487\"")
         // Use accessibility services to control unwanted apps
         // (this option is banned by Play Protect in some countries!)
         buildConfigField("Boolean", "USE_ACCESSIBILITY", "false")
+    }
+
+    signingConfigs {
+        config {
+            storeFile file('C:\\Git\\android_keystores\\base\\base.jks')
+            keyAlias = 'base'
+            keyPassword 'Base12345678@'
+            storePassword 'Base12345678@'
+        }
     }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             debuggable false
+            signingConfig signingConfigs.config
         }
         debug {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.config
         }
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
     }
 
     packagingOptions {
@@ -122,9 +135,20 @@ android {
     flavorDimensions "all"
 
     productFlavors {
-        opensource { }
+        base { }
     }
 }
+
+static def releaseTime() {
+    return new Date().format("ddMMyyyy", TimeZone.getTimeZone("UTC"))
+}
+
+android.applicationVariants.all {
+    variant -> variant.outputs.all {
+        outputFileName = "base_agent_${variant.buildType.name}_v${variant.versionName}_${releaseTime()}.apk"
+    }
+}
+
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')

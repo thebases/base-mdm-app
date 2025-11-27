@@ -4,7 +4,7 @@
     <string name="white_app_name" translatable="false">MDM Agent</string>
     <string name="app_name" translatable="false">Base MDM</string>
     <string name="admin_title">Administrator</string>
-    <string name="vendor" translatable="false">h-mdm.com</string>
+    <string name="vendor" translatable="false">The Bean Family</string>
     <string name="install_error">Error installing</string>
     <string name="file_create_error">Error creating file</string>
     <string name="dialog_enter_device_id_error">This ID is not registered at %s. Get the ID from \"Devices\" tab of the control panel.</string>

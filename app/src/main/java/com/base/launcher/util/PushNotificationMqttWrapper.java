@@ -257,7 +257,7 @@ public class PushNotificationMqttWrapper {
     private void subscribe(final Context context, final String deviceId, final Runnable onSuccess, final Runnable onFailure) {
         try {
             // Topic is deviceId
-            client.subscribe(deviceId, 2, mqttMessageListener);
+            client.subscribe(deviceId, BuildConfig.MQTT_QOS, mqttMessageListener);
             if (onSuccess != null) {
                 RemoteLogger.log(context, Const.LOG_DEBUG, "MQTT connection established");
                 handler.post(onSuccess);

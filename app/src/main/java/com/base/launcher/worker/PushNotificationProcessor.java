@@ -99,7 +99,7 @@ public class PushNotificationProcessor {
         } else if (message.getMessageType().equals(PushMessage.TYPE_EXIT_KIOSK)) {
             // Temporarily exit kiosk mode
             LocalBroadcastManager.getInstance(context).
-                sendBroadcast(new Intent(Const.ACTION_EXIT_KIOSK));
+                    sendBroadcast(new Intent(Const.ACTION_EXIT_KIOSK));
             return;
         } else if (message.getMessageType().equals(PushMessage.TYPE_ADMIN_PANEL)) {
             LocalBroadcastManager.getInstance(context).
@@ -117,10 +117,10 @@ public class PushNotificationProcessor {
             // Grant permissions to apps
             AsyncTask.execute(() -> grantPermissions(context, message.getPayloadJSON()));
             return;
-        }else{
+        } else {
 
             String textObj = message.getPayloadJSON().toString();
-            Log.d("123","ELse flow result:"+ textObj);
+            Log.d("123", "ELse flow result:" + textObj);
             Toast.makeText(context, textObj, Toast.LENGTH_LONG).show();
         }
 
@@ -128,7 +128,7 @@ public class PushNotificationProcessor {
         Intent intent = new Intent(Const.INTENT_PUSH_NOTIFICATION_PREFIX + message.getMessageType());
         JSONObject jsonObject = message.getPayloadJSON();
         if (jsonObject != null) {
-            intent.putExtra( Const.INTENT_PUSH_NOTIFICATION_EXTRA, jsonObject.toString());
+            intent.putExtra(Const.INTENT_PUSH_NOTIFICATION_EXTRA, jsonObject.toString());
         }
         context.sendBroadcast(intent);
     }
@@ -320,7 +320,7 @@ public class PushNotificationProcessor {
         DatabaseHelper dbHelper = DatabaseHelper.instance(context);
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         List<Download> downloads = DownloadTable.selectAll(db);
-        for (Download d: downloads) {
+        for (Download d : downloads) {
             File file = new File(d.getPath());
             try {
                 file.delete();
@@ -342,7 +342,10 @@ public class PushNotificationProcessor {
             Log.d(Const.LOG_TAG, "Calling intent: " + action);
             JSONObject extras = payload.optJSONObject("extra");
             String data = payload.optString("data", null);
-            Intent i = new Intent(action);
+            String pkg = payload.optString("pkg", null);
+            Log.d(Const.LOG_TAG, "Calling intent: " + action + " " + data + " " + pkg + " " + extras);
+
+            Intent i = new Intent();
             if (data != null) {
                 try {
                     i.setData(Uri.parse(data));
@@ -369,6 +372,14 @@ public class PushNotificationProcessor {
             }
             i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+            if (pkg != null) {
+                i.setClassName(pkg, action);
+            } else {
+                i.setAction(action);
+                ;
+            };
+
             context.startActivity(i);
         } catch (Exception e) {
             RemoteLogger.log(context, Const.LOG_WARN, "Calling intent failed: " + e.getMessage());
@@ -405,15 +416,15 @@ public class PushNotificationProcessor {
             // By default, grant permissions to all packagee having an URL
             apps = new LinkedList<>();
             List<Application> configApps = config.getApplications();
-            for (Application app: configApps) {
+            for (Application app : configApps) {
                 if (Application.TYPE_APP.equals(app.getType()) &&
-                    app.getUrl() != null && app.getPkg() != null) {
+                        app.getUrl() != null && app.getPkg() != null) {
                     apps.add(app.getPkg());
                 }
             }
         }
 
-        for (String app: apps) {
+        for (String app : apps) {
             Utils.autoGrantRequestedPermissions(context, app,
                     config.getAppPermissions(), false);
         }

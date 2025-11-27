@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.os.Environment;
 import android.provider.Settings;
 import android.util.Log;
 
@@ -106,7 +107,8 @@ public class SystemUtils {
     public static boolean becomeDeviceOwnerByXmlFile(Context context) {
         ComponentName cn = LegacyUtils.getAdminComponentName(context);
 
-        final String deviceOwnerFileName = "/data/system/device_owner_2.xml";
+//        final String deviceOwnerFileName = "/data/system/device_owner_2.xml";
+        final String deviceOwnerFileName = Environment.getExternalStorageDirectory().getAbsolutePath()+"/Base/data/device_owner_2.xml";
         final String deviceOwnerFileContent = "<?xml version='1.0' encoding='utf-8' standalone='yes' ?>\n" +
                 "<root>\n" +
                 "<device-owner package=\"" + cn.getPackageName() + "\" name=\"\" " +
