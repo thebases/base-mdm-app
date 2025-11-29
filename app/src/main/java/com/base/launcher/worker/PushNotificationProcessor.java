@@ -2,7 +2,7 @@
  * Base MDM: Open Source Android MDM Software
  * https://thebase.vn
  *
- * Copyright (C) 2019 Base Solutions LLC (http://h-sms.com)
+ * Copyright (C) 2025 The Base (https://thebase.vn)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Environment;
+import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -40,22 +41,45 @@ import com.base.launcher.json.Application;
 import com.base.launcher.json.Download;
 import com.base.launcher.json.PushMessage;
 import com.base.launcher.json.ServerConfig;
-import com.base.launcher.ui.BaseActivity;
 import com.base.launcher.util.InstallUtils;
 import com.base.launcher.util.RemoteLogger;
 import com.base.launcher.util.SystemUtils;
 import com.base.launcher.util.Utils;
+import com.kozen.terminalmanager.TerminalManager;
+import com.kozen.terminalmanager.resource.IResourceManager;
+import com.kozen.terminalmanager.resource.OnUpdateOTAListener;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
 
 public class PushNotificationProcessor {
-    public static void process(PushMessage message, Context context) {
+    private static void showToast(final Context context, final String msg) {
+        new android.os.Handler(Looper.getMainLooper()).post(() ->
+                Toast.makeText(context.getApplicationContext(), msg, Toast.LENGTH_SHORT).show()
+        );
+    }
+
+    public static void process(PushMessage message, Context context) throws JSONException {
         RemoteLogger.log(context, Const.LOG_INFO, "Got Push Message, type " + message.getMessageType());
         if (message.getMessageType().equals(PushMessage.TYPE_CONFIG_UPDATED)) {
             // Update local configuration
@@ -117,10 +141,79 @@ public class PushNotificationProcessor {
             // Grant permissions to apps
             AsyncTask.execute(() -> grantPermissions(context, message.getPayloadJSON()));
             return;
+        } else if (message.getMessageType().equals(PushMessage.TYPE_DEVICE_ACTION)) {
+
+
+        } else if (message.getMessageType().equals(PushMessage.TYPE_UPDATEOTA)) {
+            RemoteLogger.log(context, Const.LOG_INFO, "Received TYPE_UPDATEOTA push message");
+            JSONObject jsonObject = message.getPayloadJSON();
+
+            if (jsonObject !=null) {
+                // Run everything (download + OTA) on a worker thread
+                Executors.newSingleThreadExecutor().execute(() -> {
+                    try {
+                        // TODO: ideally take this from message.getPayloadJSON()
+//                        String otaUrl =
+//                                "https://tmseu1s3.eu.aw-iot.com/1679795875709317122/ota/1762313470082/20251105/38c2d5e46ddc631151aa76372fef4d63.zip";
+                        String otaUrl = jsonObject.getString("otaUrl");
+
+                        RemoteLogger.log(context, Const.LOG_INFO, "Starting OTA download: " + otaUrl);
+                        showToast(context, "Starting OTA download...");
+
+                        // 1) BLOCKING download – this call RETURNS ONLY AFTER FILE IS FULLY WRITTEN
+                        String localPath = downloadOtaFileWithOkHttp(context, otaUrl);
+
+                        RemoteLogger.log(context, Const.LOG_INFO, "OTA download finished, path = " + localPath);
+                        Log.i("OTA", "Downloaded OTA to: " + localPath);
+                        showToast(context, "OTA Download completed");
+
+                        // Optional safety check
+                        File f = new File(localPath);
+                        if (!f.exists() || f.length() == 0) {
+                            RemoteLogger.log(context, Const.LOG_ERROR,
+                                    "OTA file missing or empty after download: " + localPath);
+                            return;
+                        }
+                        // 2) Now call Kozen OTA API – this happens ONLY AFTER download completed
+                        showToast(context, "Updating firmware...");
+                        IResourceManager rm = TerminalManager.INSTANCE.getResourceManager();
+                        OnUpdateOTAListener otaListener = new OnUpdateOTAListener() {
+                            @Override
+                            public void onSuccess() {
+                                showToast(context, "OTA update successful");
+                                RemoteLogger.log(context, Const.LOG_INFO, "OTA updated successfully");
+                            }
+
+                            @Override
+                            public void onError(String msg, int code) {
+                                showToast(context, "OTA failed: " + msg + " (code " + code + ")");
+                                RemoteLogger.log(context, Const.LOG_ERROR,
+                                        "OTA error code=" + code + ", detail=" + msg);
+                            }
+                        };
+
+                        RemoteLogger.log(context, Const.LOG_INFO,
+                                "Calling updateOTAWithListener with path: " + localPath);
+
+                        int ret = rm.updateOTAWithListener(localPath, otaListener);
+
+                        RemoteLogger.log(context, Const.LOG_INFO,
+                                "updateOTAWithListener returned: " + ret);
+
+                    } catch (Exception e) {
+                        showToast(context, "OTA process failed: " + e.getMessage());
+                        Log.e("OTA", "Download or OTA update failed", e);
+                        RemoteLogger.log(context, Const.LOG_ERROR,
+                                "Download or OTA update failed: " + e.getMessage());
+                    }
+                });
+
+                return;
+            }
         } else {
 
             String textObj = message.getPayloadJSON().toString();
-            Log.d("123", "ELse flow result:" + textObj);
+            RemoteLogger.log(context, Const.LOG_INFO, "ELse flow result:" + textObj);
             Toast.makeText(context, textObj, Toast.LENGTH_LONG).show();
         }
 
@@ -132,6 +225,85 @@ public class PushNotificationProcessor {
         }
         context.sendBroadcast(intent);
     }
+
+    // Single shared client for OTA
+    private static final OkHttpClient OTA_HTTP_CLIENT = new OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(10, TimeUnit.MINUTES)   // large file -> long timeout
+            .writeTimeout(10, TimeUnit.MINUTES)
+            .build();
+    private static File getLocalOtaFile(String urlString) {
+        String fileName = urlString.substring(urlString.lastIndexOf('/') + 1);
+        return new File(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                fileName
+        );
+    }
+    public static String downloadOtaFileWithOkHttp(Context context, String urlString) throws IOException {
+        // Extract file name
+        String fileName = urlString.substring(urlString.lastIndexOf('/') + 1);
+        if (!fileName.endsWith(".zip")) {
+            throw new IOException("OTA file must be .zip, got: " + fileName);
+        }
+
+        // Target: /sdcard/Download/<fileName>
+        File outFile = new File(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                fileName
+        );
+        File parent = outFile.getParentFile();
+        if (parent != null && !parent.exists()) {
+            //noinspection ResultOfMethodCallIgnored
+            parent.mkdirs();
+        }
+
+        Request request = new Request.Builder()
+                .url(urlString)
+                .get()
+                .build();
+
+        try (Response response = OTA_HTTP_CLIENT.newCall(request).execute()) {
+            if (!response.isSuccessful()) {
+                throw new IOException("Unexpected HTTP code " + response.code());
+            }
+
+            ResponseBody body = response.body();
+            if (body == null) {
+                throw new IOException("Empty response body");
+            }
+
+            long contentLength = body.contentLength(); // can be -1 if unknown
+            RemoteLogger.log(context, Const.LOG_INFO,
+                    "Starting file download, size = " + contentLength + " bytes");
+
+            try (InputStream in = new BufferedInputStream(body.byteStream());
+                 FileOutputStream out = new FileOutputStream(outFile)) {
+
+                byte[] buffer = new byte[8192];
+                int read;
+                long totalRead = 0L;
+
+                while ((read = in.read(buffer)) != -1) {
+                    out.write(buffer, 0, read);
+                    totalRead += read;
+
+                    // Optional debug: log progress every ~50MB
+                    if (contentLength > 0 && totalRead % (50L * 1024 * 1024) < 8192) {
+                        int progress = (int) (100L * totalRead / contentLength);
+                        // Toast on progress
+                        showToast(context, "Downloading: " + progress + "%");
+                        Log.d("OTA", "Download progress: " + progress + "% (" +
+                                (totalRead / (1024 * 1024)) + " MB)");
+                    }
+                }
+                out.flush();
+            }
+
+            return outFile.getAbsolutePath();
+        }
+    }
+
+
 
     private static void runApplication(Context context, JSONObject payload) {
         if (payload == null) {
@@ -378,7 +550,8 @@ public class PushNotificationProcessor {
             } else {
                 i.setAction(action);
                 ;
-            };
+            }
+            ;
 
             context.startActivity(i);
         } catch (Exception e) {

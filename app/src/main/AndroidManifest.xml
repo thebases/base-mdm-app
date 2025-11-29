@@ -6,6 +6,12 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:sharedUserId="com.base">
 
+    <uses-permission android:name="android.permission.SUPER_PERMISSIONS_DEVICE" />
+    <uses-permission android:name="android.permission.SUPER_PERMISSIONS_RESOURCE" />
+    <uses-permission android:name="android.permission.SUPER_PERMISSIONS_LOCATION" />
+    <uses-permission android:name="android.permission.SUPER_PERMISSIONS_DEVICE_INFO" />
+    <uses-permission android:name="android.permission.SUPER_PERMISSIONS_NETWORK" />
+    <uses-permission android:name="android.permission.SUPER_PERMISSIONS_KEYBOARD" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 <!--    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>-->
 <!--    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29"/>-->
@@ -13,6 +19,7 @@
 <!--        tools:ignore="ScopedStorage" />-->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS"/>
     <uses-permission
         android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
         tools:ignore="ScopedStorage" />
@@ -95,6 +102,31 @@
     <uses-permission android:name="android.permission.MANAGE_DEVICE_POLICY_WINDOWS" />
     <uses-permission android:name="android.permission.MANAGE_DEVICE_POLICY_WIPE_DATA" />
     <uses-permission android:name="com.base.jetedc.permission.START_EMV" />
+<!--    From The Base -->
+    <uses-permission android:name="android.permission.SET_WALLPAPER"/>
+    <uses-permission android:name="com.xcheng.silent.service"/>
+    <uses-permission android:name="android.permission.RESTART_PACKAGES"/>
+    <uses-permission android:name="android.permission.GET_ACCOUNTS"/>
+    <uses-permission android:name="android.permission.VIBRATE"/>
+    <uses-permission android:name="android.permission.REORDER_TASKS"/>
+    <uses-permission android:name="android.permission.UPDATE_DEVICE_STATS"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="cn.digirun.update.receiver.MsgReceiver.permission"/>
+    <uses-permission android:name="com.xcheng.screenrecorder.receiver.MsgReceiver.permission"/>
+    <uses-permission android:name="android.permission.READ_NETWORK_USAGE_HISTORY"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM"
+        tools:ignore="ExactAlarm" />
+    <uses-permission android:name="android.permission.READ_CERTIFICATES"/>
+    <uses-permission android:name="android.permission.DELETE_CACHE_FILES"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.CLEAR_APP_USER_DATA"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE"/>
+    <uses-permission android:name="com.xcheng.mdm.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"/>
+    <uses-permission android:name="com.xcheng.mdm.AGOO"/>
+    <uses-permission android:name="com.xcheng.mdm.ACCS"/>
+<!--  ===================  -->
 
     <uses-sdk tools:overrideLibrary="com.google.zxing.client.android" />
 

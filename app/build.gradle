@@ -88,10 +88,17 @@ android {
         // Use accessibility services to control unwanted apps
         // (this option is banned by Play Protect in some countries!)
         buildConfigField("Boolean", "USE_ACCESSIBILITY", "false")
+
     }
 
     signingConfigs {
         config {
+            storeFile file('C:\\Git\\android_keystores\\base\\base.jks')
+            keyAlias = 'base'
+            keyPassword 'Base12345678@'
+            storePassword 'Base12345678@'
+        }
+        debug {
             storeFile file('C:\\Git\\android_keystores\\base\\base.jks')
             keyAlias = 'base'
             keyPassword 'Base12345678@'
@@ -108,7 +115,8 @@ android {
         debug {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.config
+            signingConfig signingConfigs.debug
+
         }
     }
 
@@ -199,5 +207,7 @@ dependencies {
     implementation "jakarta.xml.bind:jakarta.xml.bind-api:2.3.2"
     implementation "org.glassfish.jaxb:jaxb-runtime:2.3.2"
 
+    implementation(files("libs/ComponentLib_1.2.4_release.aar"))
+    implementation(files("libs/TerminalManagerLib_1.1.0_release.aar"))
 
 }

@@ -2,7 +2,7 @@
  * Base MDM: Open Source Android MDM Software
  * https://thebase.vn
  *
- * Copyright (C) 2019 Base Solutions LLC (http://h-sms.com)
+ * Copyright (C) 2025 The Base (https://thebase.vn)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,13 @@ public class PushMessage {
     public static final String TYPE_INTENT = "intent";
     public static final String TYPE_GRANT_PERMISSIONS = "grantPermissions";
     public static final String TYPE_ADMIN_PANEL = "adminPanel";
+
+    public static final String TYPE_UPDATEOTA = "updateOta";
+    public static final String TYPE_DEVICE_ACTION = "deviceAction";
+
+    public static final String ACTION_OTAUPDATE_PUSH = "com.xcheng.mdm.action.OTAUPDATE_PUSH";
+    public static final String ACTION__APPSTORE_PUSH = "com.xcheng.mdm.action.APPSTORE_PUSH";
+    public static final String EXTRA_PUSH_CONTENT = "content";
 
     public String getMessageType() {
         return messageType;

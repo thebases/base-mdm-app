@@ -1,7 +1,7 @@
 
 
 <resources>
-    <string name="white_app_name" translatable="false">MDM Agent</string>
+    <string name="white_app_name" translatable="false">Base Agent</string>
     <string name="app_name" translatable="false">Base MDM</string>
     <string name="admin_title">Administrator</string>
     <string name="vendor" translatable="false">The Bean Family</string>
