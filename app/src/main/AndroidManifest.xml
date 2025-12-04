@@ -103,6 +103,13 @@
     <uses-permission android:name="android.permission.MANAGE_DEVICE_POLICY_WIPE_DATA" />
     <uses-permission android:name="com.base.jetedc.permission.START_EMV" />
 <!--    From The Base -->
+
+    <!-- Android 12+ style permissions (Kozen often targets 11/12) -->
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN"
+        android:usesPermissionFlags="neverForLocation"
+        tools:targetApi="31" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
+<!--    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" /> -->
     <uses-permission android:name="android.permission.SET_WALLPAPER"/>
     <uses-permission android:name="com.xcheng.silent.service"/>
     <uses-permission android:name="android.permission.RESTART_PACKAGES"/>
@@ -127,6 +134,7 @@
     <uses-permission android:name="com.xcheng.mdm.AGOO"/>
     <uses-permission android:name="com.xcheng.mdm.ACCS"/>
 <!--  ===================  -->
+
 
     <uses-sdk tools:overrideLibrary="com.google.zxing.client.android" />
 

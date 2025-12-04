@@ -8,3 +8,5 @@
 .externalNativeBuild
 example/
 app/release
+app/build
+app/base

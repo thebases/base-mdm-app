@@ -46,6 +46,8 @@ public class PushMessage {
 
     public static final String TYPE_UPDATEOTA = "updateOta";
     public static final String TYPE_DEVICE_ACTION = "deviceAction";
+    public static final String TYPE_DEVICE_BROADCAST = "deviceBroadcast";
+    public static final String TYPE_DEVICE_FACTORY_RESET = "deviceFactoryReset";
 
     public static final String ACTION_OTAUPDATE_PUSH = "com.xcheng.mdm.action.OTAUPDATE_PUSH";
     public static final String ACTION__APPSTORE_PUSH = "com.xcheng.mdm.action.APPSTORE_PUSH";

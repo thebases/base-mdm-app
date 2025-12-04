@@ -19,12 +19,13 @@
 
 package com.base.launcher.worker;
 
+import android.app.admin.DevicePolicyManager;
 import android.content.Context;
 import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Environment;
+import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
@@ -41,6 +42,7 @@ import com.base.launcher.json.Application;
 import com.base.launcher.json.Download;
 import com.base.launcher.json.PushMessage;
 import com.base.launcher.json.ServerConfig;
+import com.base.launcher.kozen.KozenCommandHandler;
 import com.base.launcher.util.InstallUtils;
 import com.base.launcher.util.RemoteLogger;
 import com.base.launcher.util.SystemUtils;
@@ -63,6 +65,7 @@ import java.net.URL;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -73,14 +76,18 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 
 public class PushNotificationProcessor {
+    private static ExecutorService executor = Executors.newSingleThreadExecutor();
+    private static Handler handler = new Handler(Looper.getMainLooper());
     private static void showToast(final Context context, final String msg) {
-        new android.os.Handler(Looper.getMainLooper()).post(() ->
+        handler.post(() ->
                 Toast.makeText(context.getApplicationContext(), msg, Toast.LENGTH_SHORT).show()
         );
     }
 
     public static void process(PushMessage message, Context context) throws JSONException {
         RemoteLogger.log(context, Const.LOG_INFO, "Got Push Message, type " + message.getMessageType());
+        // Create KozenCommandHandler
+        KozenCommandHandler kCommand = new KozenCommandHandler(context);
         if (message.getMessageType().equals(PushMessage.TYPE_CONFIG_UPDATED)) {
             // Update local configuration
             ConfigUpdater.notifyConfigUpdate(context);
@@ -93,19 +100,32 @@ public class PushNotificationProcessor {
             return;
         } else if (message.getMessageType().equals(PushMessage.TYPE_UNINSTALL_APP)) {
             // Uninstall application
-            AsyncTask.execute(() -> uninstallApplication(context, message.getPayloadJSON()));
+//            AsyncTask.execute(() -> uninstallApplication(context, message.getPayloadJSON()));
+            executor.execute(() -> {
+                JSONObject jsonObject = new JSONObject();
+
+                try {
+                    RemoteLogger.log(context, Const.LOG_INFO, "jsonObject: " + jsonObject.toString());
+                    jsonObject.put("action","resourceUninstall");
+                    jsonObject.put("payload",message.getPayloadJSON());
+                    kCommand.execute(jsonObject);
+                } catch (JSONException e) {
+                    throw new RuntimeException(e);
+                }
+
+            });
             return;
         } else if (message.getMessageType().equals(PushMessage.TYPE_DELETE_FILE)) {
             // Delete file
-            AsyncTask.execute(() -> deleteFile(context, message.getPayloadJSON()));
+            executor.execute(() -> deleteFile(context, message.getPayloadJSON()));
             return;
         } else if (message.getMessageType().equals(PushMessage.TYPE_DELETE_DIR)) {
             // Delete directory recursively
-            AsyncTask.execute(() -> deleteDir(context, message.getPayloadJSON()));
+            executor.execute(() -> deleteDir(context, message.getPayloadJSON()));
             return;
         } else if (message.getMessageType().equals(PushMessage.TYPE_PURGE_DIR)) {
             // Purge directory (delete all files recursively)
-            AsyncTask.execute(() -> purgeDir(context, message.getPayloadJSON()));
+            executor.execute(() -> purgeDir(context, message.getPayloadJSON()));
             return;
         } else if (message.getMessageType().equals(PushMessage.TYPE_PERMISSIVE_MODE)) {
             // Turn on permissive mode
@@ -114,11 +134,13 @@ public class PushNotificationProcessor {
             return;
         } else if (message.getMessageType().equals(PushMessage.TYPE_RUN_COMMAND)) {
             // Run a command-line script
-            AsyncTask.execute(() -> runCommand(context, message.getPayloadJSON()));
+            executor.execute(() -> runCommand(context, message.getPayloadJSON()));
             return;
         } else if (message.getMessageType().equals(PushMessage.TYPE_REBOOT)) {
             // Reboot a device
-            AsyncTask.execute(() -> reboot(context));
+//            AsyncTask.execute(() -> reboot(context));
+            executor.execute(() -> reboot(context));
+
             return;
         } else if (message.getMessageType().equals(PushMessage.TYPE_EXIT_KIOSK)) {
             // Temporarily exit kiosk mode
@@ -131,17 +153,28 @@ public class PushNotificationProcessor {
             return;
         } else if (message.getMessageType().equals(PushMessage.TYPE_CLEAR_DOWNLOADS)) {
             // Clear download history
-            AsyncTask.execute(() -> clearDownloads(context));
+            executor.execute(() -> clearDownloads(context));
             return;
         } else if (message.getMessageType().equals(PushMessage.TYPE_INTENT)) {
             // Run a system intent (like settings or ACTION_VIEW)
-            AsyncTask.execute(() -> callIntent(context, message.getPayloadJSON()));
+            executor.execute(() -> callIntent(context, message.getPayloadJSON()));
             return;
         } else if (message.getMessageType().equals(PushMessage.TYPE_GRANT_PERMISSIONS)) {
             // Grant permissions to apps
-            AsyncTask.execute(() -> grantPermissions(context, message.getPayloadJSON()));
+            executor.execute(() -> grantPermissions(context, message.getPayloadJSON()));
             return;
         } else if (message.getMessageType().equals(PushMessage.TYPE_DEVICE_ACTION)) {
+            RemoteLogger.log(context, Const.LOG_INFO, "Received TYPE_DEVICE_ACTION push message");
+            JSONObject jsonObject = message.getPayloadJSON();
+            kCommand.execute(jsonObject);
+            return;
+        } else if (message.getMessageType().equals(PushMessage.TYPE_DEVICE_BROADCAST)) {
+            RemoteLogger.log(context, Const.LOG_INFO, "Received TYPE_DEVICE_BROADCAST push message");
+            JSONObject jsonObject = message.getPayloadJSON();
+            sendBroadCast(context,jsonObject.getString("title"),jsonObject.getString("content"));
+            return;
+        } else if (message.getMessageType().equals(PushMessage.TYPE_DEVICE_FACTORY_RESET)) {
+            resetFactory(context);
 
 
         } else if (message.getMessageType().equals(PushMessage.TYPE_UPDATEOTA)) {
@@ -149,8 +182,9 @@ public class PushNotificationProcessor {
             JSONObject jsonObject = message.getPayloadJSON();
 
             if (jsonObject !=null) {
+                jsonObject.put("action","updateOta");
                 // Run everything (download + OTA) on a worker thread
-                Executors.newSingleThreadExecutor().execute(() -> {
+                executor.execute(() -> {
                     try {
                         // TODO: ideally take this from message.getPayloadJSON()
 //                        String otaUrl =
@@ -176,6 +210,7 @@ public class PushNotificationProcessor {
                         }
                         // 2) Now call Kozen OTA API – this happens ONLY AFTER download completed
                         showToast(context, "Updating firmware...");
+                        kCommand.execute(jsonObject);
                         IResourceManager rm = TerminalManager.INSTANCE.getResourceManager();
                         OnUpdateOTAListener otaListener = new OnUpdateOTAListener() {
                             @Override
@@ -239,6 +274,8 @@ public class PushNotificationProcessor {
                 fileName
         );
     }
+
+
     public static String downloadOtaFileWithOkHttp(Context context, String urlString) throws IOException {
         // Extract file name
         String fileName = urlString.substring(urlString.lastIndexOf('/') + 1);
@@ -477,14 +514,32 @@ public class PushNotificationProcessor {
     }
 
     private static void reboot(Context context) {
+
         RemoteLogger.log(context, Const.LOG_WARN, "Rebooting by a Push message");
         if (Utils.checkAdminMode(context)) {
             if (!Utils.reboot(context)) {
-                RemoteLogger.log(context, Const.LOG_WARN, "Reboot failed");
+                RemoteLogger.log(context, Const.LOG_WARN, "Reboot by native failed, change to use EDC provider API ");
+                KozenCommandHandler kCommand = new KozenCommandHandler(context);
+                try {
+                    JSONObject jsonObject = new JSONObject();
+                    jsonObject.put("action","deviceReboot");
+                    jsonObject.put("payload","{}");
+                    kCommand.execute(jsonObject);
+                } catch (JSONException e) {
+                    throw new RuntimeException(e);
+                }
             }
         } else {
             RemoteLogger.log(context, Const.LOG_WARN, "Reboot failed: no permissions");
         }
+    }
+
+    private static void resetFactory(Context context) {
+        RemoteLogger.log(context, Const.LOG_WARN, "Resetting Factory by a Push message");
+        DevicePolicyManager dpm =
+                (DevicePolicyManager) context.getSystemService(Context.DEVICE_POLICY_SERVICE);
+
+        dpm.wipeData(0);
     }
 
     private static void clearDownloads(Context context) {
@@ -502,6 +557,20 @@ public class PushNotificationProcessor {
         }
         DownloadTable.deleteAll(db);
     }
+
+    public static void sendBroadCast(Context context, String str, String str2) {
+        Log.d("BaseMDM", "handlePushMqttMsg:: title= " + str + " content= " + str2);
+        Intent intent = new Intent("com.xcheng.mdm.action.MQTT_PUSH_MSG");
+        intent.putExtra("title", str);
+        intent.putExtra("content", str2);
+        // Always explicitly set the receiver
+        intent.setClassName(
+                "com.xcheng.mdm",                                // package
+                "com.xcheng.mdm.component.MyMessageReceiver"     // full class path
+        );
+        context.sendBroadcast(intent);
+    }
+
 
     private static void callIntent(Context context, JSONObject payload) {
         if (payload == null) {

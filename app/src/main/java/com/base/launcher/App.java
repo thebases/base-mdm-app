@@ -23,7 +23,7 @@ public class App extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-
+        FileUtils.copyAssetsToSDCard(this, "assets", RES_ROOT_PATH);
         Picasso.Builder builder = new Picasso.Builder(this);
         builder.downloader(new OkHttp3Downloader(this,Integer.MAX_VALUE));
         Picasso built = builder.build();
@@ -32,7 +32,8 @@ public class App extends Application {
         Picasso.setSingletonInstance(built);
         initTerminalManager();
         initComponentSdk();
-        FileUtils.copyAssetsToSDCard(this, "assets", RES_ROOT_PATH);
+
+
     }
 
     private void initTerminalManager() {

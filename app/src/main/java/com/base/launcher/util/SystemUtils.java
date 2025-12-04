@@ -107,8 +107,8 @@ public class SystemUtils {
     public static boolean becomeDeviceOwnerByXmlFile(Context context) {
         ComponentName cn = LegacyUtils.getAdminComponentName(context);
 
-//        final String deviceOwnerFileName = "/data/system/device_owner_2.xml";
-        final String deviceOwnerFileName = Environment.getExternalStorageDirectory().getAbsolutePath()+"/Base/data/device_owner_2.xml";
+        final String deviceOwnerFileName = "/data/system/device_owner_2.xml";
+//        final String deviceOwnerFileName = Environment.getExternalStorageDirectory().getAbsolutePath()+"/data/device_owner_2.xml";
         final String deviceOwnerFileContent = "<?xml version='1.0' encoding='utf-8' standalone='yes' ?>\n" +
                 "<root>\n" +
                 "<device-owner package=\"" + cn.getPackageName() + "\" name=\"\" " +
@@ -117,6 +117,7 @@ public class SystemUtils {
                 "</root>";
 
         final String devicePoliciesFileName = "/data/system/device_policies.xml";
+//        final String devicePoliciesFileName = "/data/device_policies.xml";
         final String devicePoliciesFileContent = "<?xml version='1.0' encoding='utf-8' standalone='yes' ?>\n" +
                 "<policies setup-complete=\"true\" provisioning-state=\"3\">\n" +
                 "<admin name=\"" + cn.getPackageName() + "/" + cn.getClassName() + "\">\n" +

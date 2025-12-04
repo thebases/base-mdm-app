@@ -1,24 +1,53 @@
 package com.base.launcher.kozen;
 
 import android.content.Context;
+import android.os.AsyncTask;
+import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
+import android.widget.Toast;
 
+import com.base.launcher.Const;
+import com.base.launcher.util.RemoteLogger;
 import com.kozen.terminalmanager.aidl.location.entity.LocationClientOption;
 import com.kozen.terminalmanager.aidl.network.entity.ApnConfiguration;
+import com.kozen.terminalmanager.resource.OnUpdateOTAListener;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
+
 /**
  * Executes remote Kozen-related commands coming from the MDM server.
- *
+ * <p>
  * Input: JSON command object with "type" and "payload".
  * Output: Kozen SDK calls + local result JSON for server acknowledgement.
  */
 public class KozenCommandHandler {
 
     private static final String TAG = "KozenCommandHandler";
+    private static final long OTA_TOAST_INTERVAL_MS = 3000L; // 3 seconds.
+    private static final ExecutorService EXECUTOR =
+            Executors.newSingleThreadExecutor();
 
     private final Context context;
     private final KozenTerminalFacade terminal;
@@ -30,145 +59,156 @@ public class KozenCommandHandler {
         this.component = KozenComponentFacade.get();
     }
 
+    public static void showToast(final Context context, final String msg) {
+        new android.os.Handler(Looper.getMainLooper()).post(() ->
+                Toast.makeText(context.getApplicationContext(), msg, Toast.LENGTH_SHORT).show()
+        );
+    }
+
     public JSONObject execute(JSONObject command) throws JSONException {
-        String type = command.optString("type", "");
+        String action = command.optString("action", "");
         JSONObject payload = command.optJSONObject("payload");
-        if (payload == null) payload = new JSONObject();
+        RemoteLogger.log(context, Const.LOG_INFO, "action: " + action);
+
+
+
+        if (payload == null) {payload = new JSONObject();}
+        else{RemoteLogger.log(context, Const.LOG_INFO, "payload: " + payload.toString());}
 
         JSONObject result = new JSONObject();
         result.put("id", command.optLong("id", -1));
-        result.put("type", type);
+        result.put("action", action);
 
         try {
-            switch (type) {
+            switch (action) {
                 // ===== Certification module =====
-                case "kozen.cert.update":
+                case "certUpdate":
                     result.put("status", handleCertUpdate(payload));
                     break;
-                case "kozen.cert.delete":
+                case "certDelete":
                     result.put("status", handleCertDelete(payload));
                     break;
-                case "kozen.cert.list":
+                case "certList":
                     result.put("data", handleCertList());
                     result.put("status", 0);
                     break;
 
                 // ===== Device information module =====
-                case "kozen.device_info.full":
+                case "deviceInfo":
                     result.put("data", handleDeviceInfoFull());
                     result.put("status", 0);
                     break;
 
                 // ===== Device module =====
-                case "kozen.device.set_time":
+                case "deviceSetTime":
                     result.put("status", handleSetTime(payload));
                     break;
-                case "kozen.device.set_timezone":
+                case "deviceSetTimezone":
                     result.put("status", handleSetTimeZone(payload));
                     break;
-                case "kozen.device.reboot":
+                case "deviceReboot":
                     handleReboot();
                     result.put("status", 0);
                     break;
-                case "kozen.device.shutdown":
+                case "deviceShutdown":
                     handleShutdown();
                     result.put("status", 0);
                     break;
-                case "kozen.device.set_pci_reboot":
+                case "deviceSetPciReboot":
                     result.put("status", handleSetPCIReboot(payload));
                     break;
-                case "kozen.device.cancel_pci_reboot":
+                case "deviceCancelPciReboot":
                     result.put("status", handleCancelPCIReboot());
                     break;
-                case "kozen.device.set_silent_install":
+                case "deviceSetSilentInstall":
                     handleSetSilentInstall(payload);
                     result.put("status", 0);
                     break;
-                case "kozen.device.force_permission":
+                case "deviceForcePermission":
                     handleForcePermission(payload);
                     result.put("status", 0);
                     break;
 
                 // ===== Location module =====
-                case "kozen.location.open":
+                case "locationOpen":
                     result.put("status", handleLocationOpen(payload));
                     break;
-                case "kozen.location.set_option":
+                case "locationSetOption":
                     result.put("status", handleLocationSetOption(payload));
                     break;
-                case "kozen.location.start_once":
+                case "locationStartOnce":
                     result.put("status", terminal.startOnceLocation());
                     break;
-                case "kozen.location.set_geofence":
+                case "locationSetGeofence":
                     result.put("status", handleLocationSetGeofence(payload));
                     break;
-                case "kozen.location.clear_geofence":
+                case "locationClearGeofence":
                     result.put("status", terminal.removeAllGeoFence());
                     break;
-                case "kozen.location.block_app_add":
+                case "locationBlockAppAdd":
                     result.put("status", handleLocationBlockAppAdd(payload));
                     break;
-                case "kozen.location.block_app_remove":
+                case "locationBlockAppRemove":
                     result.put("status", handleLocationBlockAppRemove(payload));
                     break;
 
                 // ===== Network module =====
-                case "kozen.network.add_apn":
+                case "networkAddApn":
                     result.put("status", handleNetworkAddApn(payload));
                     break;
-                case "kozen.network.enable_apn":
+                case "networkEnableApn":
                     result.put("status", handleNetworkEnableApn(payload));
                     break;
 
                 // ===== Resource module =====
-                case "kozen.resource.install_or_update":
+                case "resourceInstallOrUpdate":
                     result.put("status", handleInstallOrUpdate(payload));
                     break;
-                case "kozen.resource.uninstall":
+                case "resourceUninstall":
                     result.put("status", handleUninstall(payload));
                     break;
-                case "kozen.resource.update_ota":
+                case "resourceUpdateOta":
                     result.put("status", handleUpdateOta(payload));
                     break;
-                case "kozen.resource.update_custom_res":
+                case "resourceUpdateCustomRes":
                     result.put("status", handleUpdateCustomRes(payload));
                     break;
 
                 // ===== Keyboard module =====
-                case "kozen.keyboard.start":
+                case "keyboardStart":
                     result.put("status", handleKeyboardStart());
                     break;
-                case "kozen.keyboard.stop":
+                case "keyboardStop":
                     result.put("status", handleKeyboardStop());
                     break;
-                case "kozen.keyboard.set_sound":
+                case "keyboardSetSound":
                     result.put("status", handleKeyboardSetSound(payload));
                     break;
 
                 // ===== Secondary screen module =====
-                case "kozen.secondary.show_pic":
+                case "secondaryShowPic":
                     result.put("status", handleSecondaryShowPic(payload));
                     break;
-                case "kozen.secondary.show_video":
+                case "secondaryShowVideo":
                     result.put("status", handleSecondaryShowVideo(payload));
                     break;
-                case "kozen.secondary.power":
+                case "secondaryPower":
                     result.put("status", handleSecondaryPower(payload));
                     break;
-                case "kozen.secondary.brightness":
+                case "secondaryBrightness":
                     result.put("status", handleSecondaryBrightness(payload));
                     break;
-                case "kozen.secondary.set_boot_logo":
+                case "secondarySetBootLogo":
                     result.put("status", handleSecondarySetBootLogo(payload));
                     break;
 
                 default:
                     result.put("status", -1);
-                    result.put("error", "Unknown type: " + type);
+                    result.put("error", "Unknown type: " + action);
                     break;
             }
         } catch (Throwable t) {
-            Log.e(TAG, "execute error for type=" + type, t);
+            Log.e(TAG, "execute error for type=" + action, t);
             result.put("status", -1);
             result.put("error", t.getMessage());
         }
@@ -305,7 +345,7 @@ public class KozenCommandHandler {
     // ----------------- Network module -----------------
 
     private int handleNetworkAddApn(JSONObject payload) throws JSONException {
-      ApnConfiguration cfg =
+        ApnConfiguration cfg =
                 new ApnConfiguration();
         cfg.setName(payload.getString("name"));
         cfg.setApn(payload.getString("apn"));
@@ -332,14 +372,247 @@ public class KozenCommandHandler {
     }
 
     private int handleUninstall(JSONObject payload) throws JSONException {
-        String pkg = payload.getString("package");
+        RemoteLogger.log(context, Const.LOG_INFO, "payload: " + payload.toString());
+        String pkg = payload.getString("pkg");
         return terminal.unInstall(pkg);
     }
 
     private int handleUpdateOta(JSONObject payload) throws JSONException {
-        String path = payload.getString("path"); // OTA file
-        return terminal.updateOTA(path);
+        String path = payload.getString("otaUrl"); // OTA file
+        RemoteLogger.log(context, Const.LOG_INFO, "Received TYPE_UPDATE_OTA push message - otaUrl " + path);
+
+        if (path == null) {
+            return -1;
+        }
+        // Run everything (download + OTA) on a worker thread
+//        Executors.newSingleThreadExecutor().execute(() -> {
+        AsyncTask.execute(()->{
+            // flag to control "never off" toast
+            AtomicBoolean toastRunning = new AtomicBoolean(true);
+            Handler mainHandler = new Handler(Looper.getMainLooper());
+
+            // this runnable will keep re-showing the toast while toastRunning == true
+            Runnable stickyToastRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    if (!toastRunning.get()) {
+                        return; // stop loop
+                    }
+                    showToast(context, "OTA is running, please wait...");
+                    mainHandler.postDelayed(this, OTA_TOAST_INTERVAL_MS);
+                }
+            };
+
+            // start the sticky toast loop
+            mainHandler.post(stickyToastRunnable);
+            try {
+
+                RemoteLogger.log(context, Const.LOG_INFO, "Starting OTA download: " + path);
+                showToast(context, "Starting OTA download...");
+
+                // 1) BLOCKING download – this call RETURNS ONLY AFTER FILE IS FULLY WRITTEN
+                String localPath = downloadOtaFileWithOkHttp(context, path);
+
+                RemoteLogger.log(context, Const.LOG_INFO, "OTA download finished, path = " + localPath);
+                Log.i("OTA", "Downloaded OTA to: " + localPath);
+                showToast(context, "OTA Download completed");
+
+                // Optional safety check
+                File f = new File(localPath);
+                if (!f.exists() || f.length() == 0) {
+                    RemoteLogger.log(context, Const.LOG_ERROR,
+                            "OTA file missing or empty after download: " + localPath);
+                    toastRunning.set(false); // stop sticky toast
+                    return;
+                }
+                // 2) Now call Kozen OTA API – this happens ONLY AFTER download completed
+                showToast(context, "Updating firmware...");
+
+                RemoteLogger.log(context, Const.LOG_INFO,
+                        "Calling updateOTAWithListener with path: " + localPath);
+                OnUpdateOTAListener otaListener = new OnUpdateOTAListener() {
+                    @Override
+                    public void onSuccess() {
+                        toastRunning.set(false); // stop sticky toast
+                        showToast(context, "OTA update successful");
+                        RemoteLogger.log(context, Const.LOG_INFO, "OTA updated successfully");
+                    }
+
+                    @Override
+                    public void onError(String msg, int code) {
+                        toastRunning.set(false); // stop sticky toast
+                        showToast(context, "OTA failed: " + msg + " (code " + code + ")");
+                        RemoteLogger.log(context, Const.LOG_ERROR,
+                                "OTA error code=" + code + ", detail=" + msg);
+                    }
+                };
+                int ret = terminal.updateOTAWithListener(localPath, otaListener);
+                RemoteLogger.log(context, Const.LOG_INFO,
+                        "updateOTAWithListener returned: " + ret);
+
+            } catch (Exception e) {
+                toastRunning.set(false); // stop sticky toast
+                showToast(context, "OTA process failed: " + e.getMessage());
+                Log.e("OTA", "Download or OTA update failed", e);
+            }
+        });
+
+        // method itself still returns immediately; OTA + toasts continue in background
+        return 0;
     }
+
+    // Single shared client for OTA
+    private static final OkHttpClient OTA_HTTP_CLIENT = new OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(10, TimeUnit.MINUTES)   // large file -> long timeout
+            .writeTimeout(10, TimeUnit.MINUTES)
+            .build();
+
+    public static String downloadOtaFileWithOkHttp(Context context, String urlString) throws IOException {
+        // Extract file name
+        String fileName = urlString.substring(urlString.lastIndexOf('/') + 1);
+        if (!fileName.endsWith(".zip")) {
+            throw new IOException("OTA file must be .zip, got: " + fileName);
+        }
+
+        // Target: /sdcard/Download/<fileName>
+        File outFile = new File(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                fileName
+        );
+        File parent = outFile.getParentFile();
+        if (parent != null && !parent.exists()) {
+            //noinspection ResultOfMethodCallIgnored
+            parent.mkdirs();
+        }
+
+        Request request = new Request.Builder()
+                .url(urlString)
+                .get()
+                .build();
+
+        try (Response response = OTA_HTTP_CLIENT.newCall(request).execute()) {
+            if (!response.isSuccessful()) {
+                throw new IOException("Unexpected HTTP code " + response.code());
+            }
+
+            ResponseBody body = response.body();
+            if (body == null) {
+                throw new IOException("Empty response body");
+            }
+
+            long contentLength = body.contentLength(); // can be -1 if unknown
+            RemoteLogger.log(context, Const.LOG_INFO,
+                    "Starting file download, size = " + contentLength + " bytes");
+
+            try (InputStream in = new BufferedInputStream(body.byteStream());
+                 FileOutputStream out = new FileOutputStream(outFile)) {
+
+                byte[] buffer = new byte[8192];
+                int read;
+                long totalRead = 0L;
+
+                while ((read = in.read(buffer)) != -1) {
+                    out.write(buffer, 0, read);
+                    totalRead += read;
+
+                    // Optional debug: log progress every ~50MB
+                    if (contentLength > 0 && totalRead % (50L * 1024 * 1024) < 8192) {
+                        int progress = (int) (100L * totalRead / contentLength);
+                        // Toast on progress
+                        showToast(context, "Downloading: " + progress + "%");
+                        Log.d("OTA", "Download progress: " + progress + "% (" +
+                                (totalRead / (1024 * 1024)) + " MB)");
+                    }
+                }
+                out.flush();
+            }
+
+            return outFile.getAbsolutePath();
+        }
+    }
+
+    public static String downloadBootLogoWithOkHttp(Context context, String urlString) throws IOException {
+        // Extract file name from URL
+        Future<String> future = EXECUTOR.submit(() -> {
+            // ======= ORIGINAL BLOCKING BODY MOVES HERE =======
+            String fileName = urlString.substring(urlString.lastIndexOf('/') + 1);
+            if (fileName.isEmpty()) {
+                throw new IOException("Invalid boot logo file name from URL: " + urlString);
+            }
+
+            // Optionally enforce image extensions
+            if (!fileName.endsWith(".png") && !fileName.endsWith(".jpg") && !fileName.endsWith(".jpeg")) {
+                throw new IOException("Boot logo must be an image (.png/.jpg), got: " + fileName);
+            }
+
+            // Target directory: /sdcard/Download/<fileName>
+//            /storage/emulated/0/ViceScreen/sub_boot_logo
+            File outFile = new File(
+                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                    fileName
+            );
+            File parent = outFile.getParentFile();
+            if (parent != null && !parent.exists()) {
+                //noinspection ResultOfMethodCallIgnored
+                parent.mkdirs();
+            }
+
+            Request request = new Request.Builder()
+                    .url(urlString)
+                    .get()
+                    .build();
+
+            try (Response response = OTA_HTTP_CLIENT.newCall(request).execute()) {
+                if (!response.isSuccessful()) {
+                    throw new IOException("Unexpected HTTP code " + response.code());
+                }
+
+                ResponseBody body = response.body();
+                if (body == null) {
+                    throw new IOException("Empty response body");
+                }
+
+                long contentLength = body.contentLength(); // may be -1
+                RemoteLogger.log(context, Const.LOG_INFO,
+                        "Starting boot logo download, size = " + contentLength + " bytes");
+
+                try (InputStream in = new BufferedInputStream(body.byteStream());
+                     FileOutputStream out = new FileOutputStream(outFile)) {
+
+                    byte[] buffer = new byte[8192];
+                    int read;
+                    long totalRead = 0L;
+
+                    while ((read = in.read(buffer)) != -1) {
+                        out.write(buffer, 0, read);
+                        totalRead += read;
+                    }
+                    out.flush();
+                }
+
+                RemoteLogger.log(context, Const.LOG_INFO,
+                        "Boot logo downloaded to: " + outFile.getAbsolutePath());
+                return outFile.getAbsolutePath();
+            }
+        });
+        try {
+            // You can add a timeout if you want:
+            // return future.get(2, TimeUnit.MINUTES);
+            return future.get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Boot logo download interrupted", e);
+        } catch (ExecutionException e) {
+            // unwrap original exception
+            Throwable cause = e.getCause();
+            if (cause instanceof IOException) {
+                throw (IOException) cause;
+            }
+            throw new IOException("Boot logo download failed", cause);
+        }
+    }
+
 
     private int handleUpdateCustomRes(JSONObject payload) throws JSONException {
         String path = payload.getString("path");
@@ -395,7 +668,51 @@ public class KozenCommandHandler {
     }
 
     private int handleSecondarySetBootLogo(JSONObject payload) throws JSONException {
-        String path = payload.getString("path");
-        return component.setBootLogo(path);
+        String url = payload.getString("url"); // remote URL of logo image
+        RemoteLogger.log(context, Const.LOG_INFO,
+                "Received TYPE_SECONDARY_SET_BOOT_LOGO - url=" + url);
+
+        if (url == null || url.isEmpty()) {
+            RemoteLogger.log(context, Const.LOG_ERROR,
+                    "Boot logo path is null or empty");
+            return -1;
+        }
+
+        try {
+            // 1) Download logo to local storage (blocking)
+            showToast(context, "Downloading boot logo...");
+            String localPath = downloadBootLogoWithOkHttp(context, url);
+
+            // Optional: sanity check
+            File f = new File(localPath);
+            if (!f.exists() || f.length() == 0) {
+                RemoteLogger.log(context, Const.LOG_ERROR,
+                        "Boot logo file missing or empty: " + localPath);
+                showToast(context, "Boot logo download failed");
+                return -1;
+            }
+
+            // 2) Set boot logo from local file
+            RemoteLogger.log(context, Const.LOG_INFO,
+                    "Setting boot logo from: " + localPath);
+            int ret = component.setBootLogo(localPath);
+
+            RemoteLogger.log(context, Const.LOG_INFO,
+                    "setBootLogo returned: " + ret);
+            if (ret == 0) {
+                showToast(context, "Boot logo updated");
+            } else {
+                showToast(context, "Set boot logo failed, code: " + ret);
+            }
+
+            return ret;
+
+        } catch (IOException e) {
+            RemoteLogger.log(context, Const.LOG_ERROR,
+                    "Boot logo download failed: " + e.getMessage());
+            showToast(context, "Boot logo download error: " + e.getMessage());
+            return -1;
+        }
     }
+
 }

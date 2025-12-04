@@ -68,10 +68,12 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.app.ActivityCompat;
 import androidx.databinding.DataBindingUtil;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.recyclerview.widget.GridLayoutManager;
 
+import com.base.launcher.IBeaconAdvertiser;
 import com.github.anrwatchdog.ANRWatchDog;
 import com.base.launcher.AdminReceiver;
 import com.base.launcher.BuildConfig;
@@ -139,6 +141,7 @@ public class MainActivity
         ConfigUpdater.UINotifier {
 
     private static final int PERMISSIONS_REQUEST = 1000;
+    private static final String TAG = "MainActivity";
 
     private ActivityMainBinding binding;
     private SettingsHelper settingsHelper;
@@ -427,6 +430,16 @@ public class MainActivity
 
             settingsHelper.setMainActivityRunning(true);
         });
+
+        // Start iBeacon advertising once device is ready
+        Log.d(TAG, "======>>> Start iBeacon advertising");
+        // start advertising
+//        IBeaconAdvertiser.start(this);
+//
+//        // show full frame hex
+//        String hex = IBeaconAdvertiser.getFullFrameHex();
+//        Log.d(TAG,"FULL iBeacon Frame:\n" + hex);
+        startBeaconWithPermissionCheck();
     }
 
     // On some Android firmwares, onResume is called before onCreate, so the fields are not initialized
@@ -691,6 +704,20 @@ public class MainActivity
 
             if (requestPermissions) {
                 createAndShowPermissionsDialog();
+            }
+        }
+        if (requestCode == REQ_BT_PERMS) {
+            boolean granted = true;
+            for (int r : grantResults) {
+                if (r != PackageManager.PERMISSION_GRANTED) {
+                    granted = false;
+                    break;
+                }
+            }
+            if (granted) {
+                IBeaconAdvertiser.start(this);
+            } else {
+                Log.e("MainActivity", "Bluetooth permissions denied, cannot advertise");
             }
         }
     }
@@ -2758,4 +2785,50 @@ public class MainActivity
                 .replace("CUSTOM3", config.getCustom3() != null ? config.getCustom3() : "");
         FileUtils.writeStringToFile(dstFile, content);
     }
+
+    private static final int REQ_BT_PERMS = 1001;
+
+    private boolean hasBlePermissions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) { // Android 12+
+            return ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_ADVERTISE) == PackageManager.PERMISSION_GRANTED
+                    && ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED
+                    && ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED;
+        } else {
+            return ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+        }
+    }
+
+    private void requestBlePermissions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            ActivityCompat.requestPermissions(
+                    this,
+                    new String[]{
+                            Manifest.permission.BLUETOOTH_ADVERTISE,
+                            Manifest.permission.BLUETOOTH_SCAN,
+                            Manifest.permission.BLUETOOTH_CONNECT
+                    },
+                    REQ_BT_PERMS
+            );
+        } else {
+            ActivityCompat.requestPermissions(
+                    this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    REQ_BT_PERMS
+            );
+        }
+    }
+
+    // Example when clicking "Start beacon" button
+    private void startBeaconWithPermissionCheck() {
+        Log.d(TAG, "startBeaconWithPermissionCheck()");
+        if (!hasBlePermissions()) {
+            requestBlePermissions();
+        } else {
+            // Now safe to start advertising
+            IBeaconAdvertiser.start(this);
+            Log.d(TAG, "Started");
+        }
+    }
+
+
 }

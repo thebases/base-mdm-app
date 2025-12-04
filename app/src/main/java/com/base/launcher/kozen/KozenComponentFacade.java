@@ -1,6 +1,9 @@
 package com.base.launcher.kozen;
 
 
+import android.util.Log;
+
+import com.base.launcher.util.RemoteLogger;
 import com.kozen.component.constant.KeyboardConstant;
 import com.kozen.component.keyboard.IKeyboard;
 import com.kozen.component.keyboard.InputCallback;
@@ -88,6 +91,7 @@ public class KozenComponentFacade {
     }
 
     public int setBootLogo(String filePath) {
+        Log.d("KozenComponentFacade", "setBootLogo:"+filePath);
         return secondary.setBootLogo(filePath);
     }
 
