@@ -116,4 +116,14 @@
     <string name="overlays_not_supported">Purtroppo le sovrapposizioni non sono supportate dal tuo dispositivo.</string>
     <string name="admin_not_supported">Il tuo dispositivo non ha un\'opzione di amministratore dispositivo. Fai clic su Salta per continuare.</string>
     <string name="manage_storage_not_supported">Il tuo dispositivo non ha alcuna opzione per gestire la memoria esterna.</string>
+    <!--  The Base Code  -->
+    <string name="dialog_enter_mqtt_server_error">Please enter valid MQTT domain</string>
+    <string name="dialog_enter_mqtt_server_title">Please enter MQTT domain</string>
+    <string name="mqtt_domain">Enter MQTT domain</string>
+    <string name="mqtt_port">Enter MQTT port</string>
+    <string name="mqtt_username">Enter MQTT username</string>
+    <string name="mqtt_password">Enter MQTT password</string>
+    <string name="mqtt_useTls">Use TLS:</string>
+    <string name="mqtt_connect">Connect</string>
+    <string name="mqtt_save">Save</string>
 </resources>

@@ -274,7 +274,7 @@ public class ConfigUpdater {
         setupPushService();
     }
 
-    private void setupPushService() {
+    public void setupPushService() {
         Log.d(Const.LOG_TAG, "setupPushService() called");
         String pushOptions = null;
         int keepaliveTime = Const.DEFAULT_PUSH_ALARM_KEEPALIVE_TIME_SEC;

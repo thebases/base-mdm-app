@@ -67,13 +67,11 @@ public class KozenCommandHandler {
 
     public JSONObject execute(JSONObject command) throws JSONException {
         String action = command.optString("action", "");
-        JSONObject payload = command.optJSONObject("payload");
+        JSONObject payload = command.optJSONObject("data");
         RemoteLogger.log(context, Const.LOG_INFO, "action: " + action);
 
-
-
         if (payload == null) {payload = new JSONObject();}
-        else{RemoteLogger.log(context, Const.LOG_INFO, "payload: " + payload.toString());}
+        else{RemoteLogger.log(context, Const.LOG_INFO, "data: " + payload.toString());}
 
         JSONObject result = new JSONObject();
         result.put("id", command.optLong("id", -1));

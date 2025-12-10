@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:bind="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <variable
+            name="error"
+            type="Boolean" />
+        <variable
+            name="errorText"
+            type="String" />
+
+        <variable
+            name="server"
+            type="String" />
+
+        <variable
+            name="port"
+            type="String" />
+
+        <variable
+            name="useTls"
+            type="Boolean" />
+
+        <variable
+            name="userName"
+            type="String" />
+
+        <variable
+            name="password"
+            type="String" />
+    </data>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:focusable="true"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:paddingLeft="@dimen/activity_horizontal_margin"
+        android:paddingTop="@dimen/activity_vertical_margin"
+        android:paddingRight="@dimen/activity_horizontal_margin"
+        android:paddingBottom="@dimen/activity_vertical_margin"
+        tools:context="com.base.launcher.ui.MainActivity">
+
+        <TextView
+            android:layout_width="@dimen/dialog_enter_device_id_width"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:text="@={errorText}"
+            bind:boolToVisible="@{error}" />
+
+        <TextView
+            android:layout_width="@dimen/dialog_enter_device_id_width"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:text="@string/dialog_enter_server_title"
+            bind:boolToVisible="@{!error}" />
+
+        <EditText
+            android:id="@+id/mqtt_server"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/activity_vertical_margin"
+            android:layout_marginBottom="@dimen/activity_vertical_margin"
+            android:focusable="true"
+            android:hint="@string/mqtt_domain"
+            android:imeOptions="actionDone"
+            android:inputType="text"
+            android:text="@={server}" />
+
+        <EditText
+            android:id="@+id/mqtt_server_port"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/activity_vertical_margin"
+            android:layout_marginBottom="@dimen/activity_vertical_margin"
+            android:focusable="true"
+            android:hint="@string/mqtt_port"
+            android:imeOptions="actionDone"
+            android:inputType="text"
+            android:text="@={port}" />
+        <CheckBox
+            android:id="@+id/checkBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/activity_vertical_margin"
+            android:layout_marginBottom="@dimen/activity_vertical_margin"
+            android:text="@string/mqtt_useTls"
+            android:checked="@={useTls}"/>
+
+        <EditText
+            android:id="@+id/mqtt_username"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/activity_vertical_margin"
+            android:layout_marginBottom="@dimen/activity_vertical_margin"
+            android:focusable="true"
+            android:hint="@string/mqtt_username"
+            android:imeOptions="actionDone"
+            android:inputType="text"
+            android:text="@={userName}" />
+
+        <EditText
+            android:id="@+id/mqtt_password"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/activity_vertical_margin"
+            android:layout_marginBottom="@dimen/activity_vertical_margin"
+            android:focusable="true"
+            android:hint="@string/mqtt_password"
+            android:imeOptions="actionDone"
+            android:inputType="textPassword"
+            android:text="@={password}" />
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btnConnectMqtt"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:onClick="connectMQTT"
+                android:text="MQTT Connect"
+                android:textSize="@dimen/button_text_size_small" />
+
+            <Button
+                android:id="@+id/btnSaveMqtt"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:onClick="saveMqttServerUrl"
+                android:text="Save MQTT" />
+        </LinearLayout>
+
+
+    </LinearLayout>
+
+</layout>

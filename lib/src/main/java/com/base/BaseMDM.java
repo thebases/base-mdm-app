@@ -323,7 +323,7 @@ public class BaseMDM {
                 if (eventHandler != null) {
                     eventHandler.onBaseMDMDisconnected();
                 }
-                new Handler().postDelayed(new MDMReconnectRunnable(), Const.HMDM_RECONNECT_DELAY_FIRST);
+                new Handler().postDelayed(new MDMReconnectRunnable(), Const.BASE_RECONNECT_DELAY_FIRST);
             }
         }
     };
@@ -336,7 +336,7 @@ public class BaseMDM {
             }
             if (!mdmService.connect(context, resultHandler)) {
                 // Retry in 1 minute
-                new Handler().postDelayed(this, Const.HMDM_RECONNECT_DELAY_NEXT);
+                new Handler().postDelayed(this, Const.BASE_RECONNECT_DELAY_NEXT);
             }
         }
     }

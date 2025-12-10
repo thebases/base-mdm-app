@@ -26,7 +26,7 @@ import com.base.launcher.AdminReceiver;
 
 /**
  * For compatibility with old builds
- * Legacy admin receiver is ru.headwind.kiosk.AdminReceiver, it is replaced in legacy build variants
+ * Legacy admin receiver is com.base.kiosk.AdminReceiver, it is replaced in legacy build variants
  */
 public class LegacyUtils {
     public static ComponentName getAdminComponentName(Context context) {

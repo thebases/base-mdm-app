@@ -110,4 +110,14 @@
     <string name="overlays_not_supported">Rất tiếc, lớp phủ không được hỗ trợ bởi thiết bị của bạn.</string>
     <string name="admin_not_supported">Thiết bị của bạn không có tùy chọn quản trị viên thiết bị. Nhấn Bỏ qua để tiếp tục.</string>
     <string name="manage_storage_not_supported">Thiết bị của bạn không có tùy chọn quản lý bộ nhớ ngoài.</string>
+    <!-- The Base Code   -->
+    <string name="dialog_enter_mqtt_server_error">Vui lòng nhập đúng thông tin MQTT server</string>
+    <string name="dialog_enter_mqtt_server_title">Vui lòng nhập thông tin MQTT server</string>
+    <string name="mqtt_domain">Nhập MQTT domainn</string>
+    <string name="mqtt_port">Nhập MQTT port</string>
+    <string name="mqtt_username">Nhập MQTT username</string>
+    <string name="mqtt_password">Nhập MQTT password</string>
+    <string name="mqtt_useTls">Dùng TLS:</string>
+    <string name="mqtt_connect">Kết nối</string>
+    <string name="mqtt_save">Lưu</string>
 </resources>

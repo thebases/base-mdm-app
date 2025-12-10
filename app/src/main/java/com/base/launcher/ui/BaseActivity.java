@@ -39,6 +39,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.databinding.DataBindingUtil;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
+import com.base.launcher.databinding.DialogEnterMqttServerBinding;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 import com.base.launcher.BuildConfig;
@@ -65,6 +66,11 @@ import okhttp3.HttpUrl;
 public class BaseActivity extends AppCompatActivity {
 
     protected ProgressDialog progressDialog;
+
+    // ========= The Base Code =========
+    protected Dialog enterMqttServerDialog;
+    protected DialogEnterMqttServerBinding dialogEnterMqttServerBinding;
+    // ==================================
 
     protected Dialog enterServerDialog;
     protected DialogEnterServerBinding dialogEnterServerBinding;

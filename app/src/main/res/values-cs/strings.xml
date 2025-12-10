@@ -110,4 +110,13 @@
     <string name="overlays_not_supported">Překreslování obrazovku bohužel není podporováno na vašem zařízení.</string>
     <string name="admin_not_supported">Vaše zařízení nemá možnost vytvoření administrátora zařízení. Vyberte přeskočit pro pokračování.</string>
     <string name="manage_storage_not_supported">Vaše zařízení nemá možnost spravovat externí úložiště.</string>
+    <string name="dialog_enter_mqtt_server_title">Please enter MQTT domain</string>
+    <string name="mqtt_domain">Enter MQTT domain</string>
+    <string name="mqtt_port">Enter MQTT port</string>
+    <string name="mqtt_username">Enter MQTT username</string>
+    <string name="mqtt_password">Enter MQTT password</string>
+    <string name="mqtt_useTls">Use TLS:</string>
+    <string name="dialog_enter_mqtt_server_error">Please enter valid MQTT domain</string>
+    <string name="mqtt_connect">Connect</string>
+    <string name="mqtt_save">Save</string>
 </resources>

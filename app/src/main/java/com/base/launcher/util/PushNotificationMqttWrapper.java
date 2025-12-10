@@ -90,14 +90,15 @@ public class PushNotificationMqttWrapper {
     }
 
     public void connect(final Context context, String host, int port,boolean useSsl,String username,
-
                         String password, String pushType, int keepaliveTime,
                         final String deviceId, final Runnable onSuccess, final Runnable onFailure) {
+        Log.d(Const.LOG_TAG, "connect() called:"+host+" - port:"+port+" - useTls:"+useSsl+" - username:"+username+" - password:"+password);
         String serverUri;
         this.context = context;
 
         cancelReconnectionAfterFailure(context);
         if (client != null && client.isConnected()) {
+            Log.d(Const.LOG_TAG, "MQTT client is already connected");
             if (onSuccess != null) {
                 handler.post(onSuccess);
             }
@@ -116,8 +117,9 @@ public class PushNotificationMqttWrapper {
             connectOptions.setKeepAliveInterval(keepaliveTime);
         }
         connectOptions.setUserName(username);
-//        connectOptions.setPassword(CryptoHelper.getSHA1String("hmdm" + BuildConfig.REQUEST_SIGNATURE).toCharArray());
+//        connectOptions.setPassword(CryptoHelper.getSHA1String("base" + BuildConfig.REQUEST_SIGNATURE).toCharArray());
         connectOptions.setPassword(password.toCharArray());
+
 
         if (useSsl){
             serverUri = "ssl://" + host + ":" + port;

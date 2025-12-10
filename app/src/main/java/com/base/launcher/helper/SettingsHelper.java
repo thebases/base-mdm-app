@@ -25,6 +25,7 @@ package com.base.launcher.helper;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.util.Log;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.base.launcher.BuildConfig;
@@ -416,32 +417,33 @@ public class SettingsHelper {
     private static final String PREF_KEY_MQTT_TLS = ".helpers.MQTT_TLS";
     private static final String PREF_KEY_MQTT_USERNAME = ".helpers.MQTT_USERNAME";
     private static final String PREF_KEY_MQTT_PASSWORD = ".helpers.MQTT_PASSWORD";
-    public boolean setMqttDomain( String mqttDomain ) {
-        return sharedPreferences.edit().putString(PACKAGE_NAME + PREF_KEY_MQTT_DOMAIN, mqttDomain ).commit();
+    public void setMqttDomain(String mqttDomain ) {
+        sharedPreferences.edit().putString(PACKAGE_NAME + PREF_KEY_MQTT_DOMAIN, mqttDomain).apply();
+        Log.d("MQTT", "setMqttDomain(): " + sharedPreferences.getString(PACKAGE_NAME + PREF_KEY_MQTT_DOMAIN,"write failed"));
     }
     public String getMqttDomain() {
         return sharedPreferences.getString(PACKAGE_NAME + PREF_KEY_MQTT_DOMAIN, BuildConfig.MQTT_DOMAIN );
     }
-    public boolean setMqttPort( Integer mqttPort ) {
-        return sharedPreferences.edit().putInt(PACKAGE_NAME + PREF_KEY_MQTT_PORT, mqttPort ).commit();
+    public void setMqttPort(Integer mqttPort ) {
+        sharedPreferences.edit().putInt(PACKAGE_NAME + PREF_KEY_MQTT_PORT, mqttPort).apply();
     }
     public Integer getMqttPort() {
         return sharedPreferences.getInt(PACKAGE_NAME + PREF_KEY_MQTT_PORT, BuildConfig.MQTT_PORT );
     }
-    public boolean setMqttTls( boolean mqttTls ) {
-        return sharedPreferences.edit().putBoolean(PACKAGE_NAME + PREF_KEY_MQTT_TLS, mqttTls ).commit();
+    public void setMqttTls(boolean mqttTls ) {
+        sharedPreferences.edit().putBoolean(PACKAGE_NAME + PREF_KEY_MQTT_TLS, mqttTls).apply();
     }
     public boolean getMqttTls() {
         return sharedPreferences.getBoolean(PACKAGE_NAME + PREF_KEY_MQTT_TLS, BuildConfig.MQTT_TLS );
     }
-    public boolean setMqttUsername( String mqttUsername ) {
-        return sharedPreferences.edit().putString(PACKAGE_NAME + PREF_KEY_MQTT_USERNAME, mqttUsername ).commit();
+    public void setMqttUsername(String mqttUsername ) {
+        sharedPreferences.edit().putString(PACKAGE_NAME + PREF_KEY_MQTT_USERNAME, mqttUsername).apply();
     }
     public String getMqttUsername() {
         return sharedPreferences.getString(PACKAGE_NAME + PREF_KEY_MQTT_USERNAME, BuildConfig.MQTT_USERNAME );
     }
-    public boolean setMqttPassword( String mqttPassword ) {
-        return sharedPreferences.edit().putString(PACKAGE_NAME + PREF_KEY_MQTT_PASSWORD, mqttPassword ).commit();
+    public void setMqttPassword(String mqttPassword ) {
+        sharedPreferences.edit().putString(PACKAGE_NAME + PREF_KEY_MQTT_PASSWORD, mqttPassword).apply();
     }
     public String getMqttPassword() {
         return sharedPreferences.getString(PACKAGE_NAME + PREF_KEY_MQTT_PASSWORD, BuildConfig.MQTT_PASSWORD );

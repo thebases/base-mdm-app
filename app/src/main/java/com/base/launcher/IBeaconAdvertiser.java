@@ -21,8 +21,8 @@ public class IBeaconAdvertiser {
 
     private static final String TAG = "IBeaconAdvertiser";
 
-    private static final UUID BEACON_UUID =
-            UUID.fromString("fda50693-a4e2-4fb1-afcf-c6eb07647825");
+    private static final UUID BEACON_UUID = UUID.fromString(UUID.randomUUID().toString());
+//            UUID.fromString("fda50693-a4e2-4fb1-afcf-c6eb07647825");
     private static final int MAJOR = 1;
     private static final int MINOR = 1;
     private static final int MEASURED_POWER_DBM = -59;

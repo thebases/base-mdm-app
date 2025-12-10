@@ -19,6 +19,9 @@
 
 package com.base.launcher.ui;
 
+import static java.lang.Integer.parseInt;
+
+import android.app.Dialog;
 import android.app.admin.DevicePolicyManager;
 import android.content.ComponentName;
 import android.content.Context;
@@ -28,7 +31,9 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.UserManager;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.Window;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
@@ -39,6 +44,7 @@ import com.base.launcher.BuildConfig;
 import com.base.launcher.Const;
 import com.base.launcher.R;
 import com.base.launcher.databinding.ActivityAdminBinding;
+import com.base.launcher.helper.ConfigUpdater;
 import com.base.launcher.helper.SettingsHelper;
 import com.base.launcher.json.ServerConfig;
 import com.base.launcher.pro.ProUtils;
@@ -53,6 +59,7 @@ public class AdminActivity extends BaseActivity {
 
     private static final String KEY_APP_INFO = "info";
     private SettingsHelper settingsHelper;
+    private ConfigUpdater configUpdater;
 
     @Nullable
     public static AppInfo getAppInfo(Intent intent){
@@ -88,6 +95,7 @@ public class AdminActivity extends BaseActivity {
         }
 
         settingsHelper = SettingsHelper.getInstance( this );
+        configUpdater = new ConfigUpdater(); // TODO: should review this later
         binding.deviceId.setText(settingsHelper.getDeviceId());
         binding.deviceId.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -237,4 +245,112 @@ public class AdminActivity extends BaseActivity {
             }
         }
     }
+
+    //========= The Base Code ==========
+    public void changeMQTTServerUrl(View view) {
+        dismissDialog(enterMqttServerDialog);
+        createAndShowMqttServerDialog(false, settingsHelper.getMqttDomain(), settingsHelper.getMqttPort(), settingsHelper.getMqttTls(), settingsHelper.getMqttUsername(), settingsHelper.getMqttPassword());
+    }
+
+    public void connectMQTT(View view ) {
+        // TODO: handle to save MQTT infomation
+        Log.d(Const.LOG_TAG, "setupPushService() called");
+        String pushOptions = null;
+        int keepaliveTime = Const.DEFAULT_PUSH_ALARM_KEEPALIVE_TIME_SEC;
+        settingsHelper.setMqttUsername(dialogEnterMqttServerBinding.getUserName());
+        settingsHelper.setMqttPassword(dialogEnterMqttServerBinding.getPassword());
+        settingsHelper.setMqttDomain(dialogEnterMqttServerBinding.getServer());
+        settingsHelper.setMqttPort(parseInt(dialogEnterMqttServerBinding.getPort()));
+        settingsHelper.setMqttTls(dialogEnterMqttServerBinding.getUseTls());
+
+
+        if (settingsHelper != null && settingsHelper.getConfig() != null) {
+            pushOptions = settingsHelper.getConfig().getPushOptions();
+            Integer newKeepaliveTime = settingsHelper.getConfig().getKeepaliveTime();
+            if (newKeepaliveTime != null && newKeepaliveTime >= 30) {
+                keepaliveTime = newKeepaliveTime;
+            }
+        }
+        Runnable failRunnable = new Runnable() {
+            @Override
+            public void run() {
+                Log.d(Const.LOG_TAG, "MQTT is failed to connect");
+
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(AdminActivity.this, "MQTT server connected failed", Toast.LENGTH_LONG).show();
+                        dialogEnterMqttServerBinding.setError(true);
+                        dialogEnterMqttServerBinding.setErrorText( getString(R.string.mqtt_connect_failed));
+                    }
+                });
+            }
+        };
+        Runnable successRunnable = new Runnable() {
+            @Override
+            public void run() {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(AdminActivity.this, "MQTT server connected", Toast.LENGTH_LONG).show();
+                        dismissDialog(enterMqttServerDialog);
+                    }
+                });
+            }
+        };
+        Toast.makeText(this, "MQTT server is connecting... please wait", Toast.LENGTH_SHORT).show();
+        dialogEnterMqttServerBinding.setError(true);
+        dialogEnterMqttServerBinding.setErrorText( getString(R.string.mqtt_connecting));
+        PushNotificationMqttWrapper pushService = PushNotificationMqttWrapper.getInstance();
+        pushService.disconnect(this);
+        pushService.connect(this, dialogEnterMqttServerBinding.getServer(),
+                parseInt(dialogEnterMqttServerBinding.getPort()),dialogEnterMqttServerBinding.getUseTls(), dialogEnterMqttServerBinding.getUserName(),
+                dialogEnterMqttServerBinding.getPassword(), pushOptions, keepaliveTime,
+                settingsHelper.getDeviceId(), successRunnable, failRunnable);
+
+    }
+    public void saveMqttServerUrl(View view ) {
+        // TODO: handle to save MQTT infomation
+        settingsHelper.setMqttUsername(dialogEnterMqttServerBinding.getUserName());
+        settingsHelper.setMqttPassword(dialogEnterMqttServerBinding.getPassword());
+        settingsHelper.setMqttDomain(dialogEnterMqttServerBinding.getServer());
+        settingsHelper.setMqttPort(parseInt(dialogEnterMqttServerBinding.getPort()));
+        settingsHelper.setMqttTls(dialogEnterMqttServerBinding.getUseTls());
+        dialogEnterMqttServerBinding.setError(true);
+        dialogEnterMqttServerBinding.setErrorText( getString(R.string.mqtt_save_data));
+    }
+
+    protected void createAndShowMqttServerDialog(boolean error, String serverDomain, Integer serverPort, Boolean useTLS, String userName, String password) {
+        dismissDialog(enterMqttServerDialog);
+        enterMqttServerDialog = new Dialog( this );
+        dialogEnterMqttServerBinding = DataBindingUtil.inflate(
+                LayoutInflater.from( this ),
+                R.layout.dialog_enter_mqtt_server,
+                null,
+                false );
+        dialogEnterMqttServerBinding.setError(error);
+        enterMqttServerDialog.setCancelable(false);
+        enterMqttServerDialog.requestWindowFeature( Window.FEATURE_NO_TITLE );
+
+        // set View Variables
+        dialogEnterMqttServerBinding.setServer(serverDomain);
+        dialogEnterMqttServerBinding.setPort(serverPort.toString());
+        dialogEnterMqttServerBinding.setUseTls(useTLS);
+        dialogEnterMqttServerBinding.setUserName(userName);
+        dialogEnterMqttServerBinding.setPassword(password);
+
+
+        enterMqttServerDialog.setContentView( dialogEnterMqttServerBinding.getRoot() );
+        enterMqttServerDialog.setOnShowListener(dialog -> {
+            dialogEnterMqttServerBinding.mqttServer.requestFocus();
+        });
+//        dialogEnterMqttServerBinding.mqttServerPort.setOnFocusChangeListener((view, hasFocus) -> {
+//            if (hasFocus) {
+//                InputMethodManager imm = (InputMethodManager) view.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+//                imm.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT);
+//            }
+//        });
+        enterMqttServerDialog.show();
+    }
+
 }

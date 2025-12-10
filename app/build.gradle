@@ -46,9 +46,9 @@ android {
         // Enables Push notifications. Setting it to false will stop automatic configuration updates after changing it on the server.
         buildConfigField("Boolean", "ENABLE_PUSH", "true")
         // MQTT port for Push notifications
-        buildConfigField("String", "MQTT_DOMAIN", "\"62.146.233.40\"")
-        buildConfigField("Integer", "MQTT_PORT", "11883")
-        buildConfigField("Boolean", "MQTT_TLS", "false")
+        buildConfigField("String", "MQTT_DOMAIN", "\"mqtt.thebase.vn\"")
+        buildConfigField("Integer", "MQTT_PORT", "18883")
+        buildConfigField("Boolean", "MQTT_TLS", "true")
         buildConfigField("Integer", "MQTT_QOS", "1")
         buildConfigField("String", "MQTT_USERNAME", "\"basemdm\"")
         buildConfigField("String", "MQTT_PASSWORD", "\"theBase15112023@\"")

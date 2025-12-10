@@ -15,5 +15,5 @@
 #-keepclassmembers class fqcn.of.javascript.interface.for.webview {
 #   public *;
 #}
--keep class !ru.headwind.kiosk.**{ *; }
--keep class ru.headwind.kiosk.sdk.UpdateError {*;}
+-keep class !com.base.kiosk.**{ *; }
+-keep class com.base.kiosk.sdk.UpdateError {*;}

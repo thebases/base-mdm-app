@@ -5,7 +5,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:sharedUserId="com.base">
-
+    <uses-permission android:name="android.permission.MANAGE_DEVICE_ADMINS"
+        tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.SUPER_PERMISSIONS_DEVICE" />
     <uses-permission android:name="android.permission.SUPER_PERMISSIONS_RESOURCE" />
     <uses-permission android:name="android.permission.SUPER_PERMISSIONS_LOCATION" />
@@ -39,9 +40,18 @@
         tools:ignore="ProtectedPermissions"/>
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
     <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES"/>
-    <uses-permission android:name="android.permission.BLUETOOTH" android:required="false" android:maxSdkVersion="30"/>
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:required="false" android:maxSdkVersion="30"/>
-    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" android:required="false"/>
+    <!-- Classic Bluetooth permissions for API <= 30 -->
+    <uses-permission
+        android:name="android.permission.BLUETOOTH"
+        android:maxSdkVersion="30"/>
+
+    <uses-permission
+        android:name="android.permission.BLUETOOTH_ADMIN"
+        android:maxSdkVersion="30"/>
+
+    <!-- New Bluetooth permission for API 31+ -->
+    <uses-permission
+        android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE"/>
@@ -109,7 +119,6 @@
         android:usesPermissionFlags="neverForLocation"
         tools:targetApi="31" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
-<!--    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" /> -->
     <uses-permission android:name="android.permission.SET_WALLPAPER"/>
     <uses-permission android:name="com.xcheng.silent.service"/>
     <uses-permission android:name="android.permission.RESTART_PACKAGES"/>
@@ -137,10 +146,15 @@
 
 
     <uses-sdk tools:overrideLibrary="com.google.zxing.client.android" />
-
+    <uses-feature android:name="android.hardware.bluetooth" android:required="false" />
+    <uses-feature android:name="android.hardware.bluetooth_le" android:required="false" />
+    <uses-feature android:name="android.hardware.location" android:required="false" />
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+    <uses-feature android:name="android.hardware.location.network" android:required="false" />
     <uses-feature android:name="android.hardware.telephony" android:required="false" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
     <uses-feature android:name="android.software.leanback" android:required="false" />
+
 
     <application
         android:icon="@mipmap/ic_launcher"

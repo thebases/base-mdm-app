@@ -109,7 +109,7 @@ public class InstallUtils {
                     continue;
                 }
 
-                if (!application.isRemove() && !upgradingHmdmFreeToFull(context, application, packageInfo) &&
+                if (!application.isRemove() && !upgradingBaseFreeToFull(context, application, packageInfo) &&
                         (application.isSkipVersion() || application.getVersion().equals("0") ||
                                 areVersionsEqual(packageInfo.versionName, packageInfo.versionCode, application.getVersion(), application.getCode()))) {
                     // If installation is required, but the app of the same version already installed, do not install
@@ -166,10 +166,7 @@ public class InstallUtils {
         return false;
     }
 
-    // Free and full versions of Base MDM launcher have the same version name but different version codes
-    // This is a dirty hack determining the full version by the URL
-    // It's however better to use different versions, for example 5.16.1 for free and 5.16.2 for full
-    private static boolean upgradingHmdmFreeToFull(Context context, Application application, PackageInfo packageInfo) {
+    private static boolean upgradingBaseFreeToFull(Context context, Application application, PackageInfo packageInfo) {
         if (!application.getPkg().equals(context.getPackageName())) {
             return false;
         }

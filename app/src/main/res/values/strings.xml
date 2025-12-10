@@ -123,4 +123,17 @@
         -->
         <item>isrg_root_x1.pem</item>
     </string-array>
+    <!--  The Base Code  -->
+    <string name="dialog_enter_mqtt_server_error">Please enter valid MQTT domain</string>
+    <string name="dialog_enter_mqtt_server_title">Please enter MQTT domain</string>
+    <string name="mqtt_domain">Enter MQTT domain</string>
+    <string name="mqtt_port">Enter MQTT port</string>
+    <string name="mqtt_username">Enter MQTT username</string>
+    <string name="mqtt_password">Enter MQTT password</string>
+    <string name="mqtt_useTls">Use TLS:</string>
+    <string name="mqtt_connect">Connect</string>
+    <string name="mqtt_save">Save</string>
+    <string name="mqtt_save_data" translatable="false">Save MQTT server data, please press connect button again!</string>
+    <string name="mqtt_connecting" translatable="false">Connecting MQTT server...</string>
+    <string name="mqtt_connect_failed" translatable="false">Check your MQTT server data and connect again.</string>
 </resources>
