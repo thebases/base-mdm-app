@@ -1,5 +1,5 @@
 /*
- * Base MDM: Open Source Android MDM Software
+ * Base MDM
  * https://thebase.vn
  *
  * Copyright (C) 2025 The Base (https://thebase.vn)

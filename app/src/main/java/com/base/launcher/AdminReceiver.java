@@ -22,9 +22,6 @@ import org.json.JSONObject;
 import java.io.File;
 import java.util.Iterator;
 
-/**
- * Created by Ivan Lozenko on 21.02.2017.
- */
 
 public class AdminReceiver extends DeviceAdminReceiver {
 
