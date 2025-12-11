@@ -117,6 +117,7 @@
     <string name="admin_not_supported">Il tuo dispositivo non ha un\'opzione di amministratore dispositivo. Fai clic su Salta per continuare.</string>
     <string name="manage_storage_not_supported">Il tuo dispositivo non ha alcuna opzione per gestire la memoria esterna.</string>
     <!--  The Base Code  -->
+    <string name="mqtt_menu_item">Change MQTT Server</string>
     <string name="dialog_enter_mqtt_server_error">Please enter valid MQTT domain</string>
     <string name="dialog_enter_mqtt_server_title">Please enter MQTT domain</string>
     <string name="mqtt_domain">Enter MQTT domain</string>

@@ -124,6 +124,7 @@
         <item>isrg_root_x1.pem</item>
     </string-array>
     <!--  The Base Code  -->
+    <string name="mqtt_menu_item">Change MQTT Server</string>
     <string name="dialog_enter_mqtt_server_error">Please enter valid MQTT domain</string>
     <string name="dialog_enter_mqtt_server_title">Please enter MQTT domain</string>
     <string name="mqtt_domain">Enter MQTT domain</string>

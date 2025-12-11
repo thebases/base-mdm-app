@@ -77,7 +77,7 @@
                     android:layout_marginLeft="@dimen/activity_horizontal_margin"
                     android:layout_marginRight="@dimen/activity_horizontal_margin"
                     android:onClick="changeMQTTServerUrl"
-                    android:text="Change MQTT Server" />
+                    android:text="@string/mqtt_menu_item" />
 
                 <Button
                     android:layout_width="match_parent"

@@ -116,6 +116,7 @@
 	<string name="mqtt_username">Enter MQTT username</string>
 	<string name="mqtt_password">Enter MQTT password</string>
 	<string name="mqtt_useTls">Use TLS:</string>
+	<string name="mqtt_menu_item">Change MQTT Server</string>
 	<string name="dialog_enter_mqtt_server_error">Please enter valid MQTT domain</string>
 	<string name="mqtt_connect">Connect</string>
 	<string name="mqtt_save">Save</string>
