@@ -12,6 +12,7 @@ import com.base.launcher.Const;
 import com.base.launcher.util.RemoteLogger;
 import com.kozen.terminalmanager.aidl.location.entity.LocationClientOption;
 import com.kozen.terminalmanager.aidl.network.entity.ApnConfiguration;
+import com.kozen.terminalmanager.resource.OnAppUpdateListener;
 import com.kozen.terminalmanager.resource.OnUpdateOTAListener;
 
 import org.json.JSONArray;
@@ -45,7 +46,7 @@ import okhttp3.ResponseBody;
 public class KozenCommandHandler {
 
     private static final String TAG = "KozenCommandHandler";
-    private static final long OTA_TOAST_INTERVAL_MS = 3000L; // 3 seconds.
+    private static final long TOAST_INTERVAL_MS = 3000L; // 3 seconds.
     private static final ExecutorService EXECUTOR =
             Executors.newSingleThreadExecutor();
 
@@ -59,9 +60,14 @@ public class KozenCommandHandler {
         this.component = KozenComponentFacade.get();
     }
 
+    private static Toast toast;
+
     public static void showToast(final Context context, final String msg) {
-        new android.os.Handler(Looper.getMainLooper()).post(() ->
-                Toast.makeText(context.getApplicationContext(), msg, Toast.LENGTH_SHORT).show()
+        if (toast != null) toast.cancel();
+        new android.os.Handler(Looper.getMainLooper()).post(() -> {
+                    toast = Toast.makeText(context.getApplicationContext(), msg, Toast.LENGTH_SHORT);
+                    toast.show();
+                }
         );
     }
 
@@ -70,8 +76,11 @@ public class KozenCommandHandler {
         JSONObject payload = command.optJSONObject("data");
         RemoteLogger.log(context, Const.LOG_INFO, "action: " + action);
 
-        if (payload == null) {payload = new JSONObject();}
-        else{RemoteLogger.log(context, Const.LOG_INFO, "data: " + payload.toString());}
+        if (payload == null) {
+            payload = new JSONObject();
+        } else {
+            RemoteLogger.log(context, Const.LOG_INFO, "data: " + payload.toString());
+        }
 
         JSONObject result = new JSONObject();
         result.put("id", command.optLong("id", -1));
@@ -364,13 +373,100 @@ public class KozenCommandHandler {
 
     // ----------------- Resource module -----------------
 
+    //    private int handleInstallOrUpdate(JSONObject payload) throws JSONException {
+//        String path = payload.getString("url"); // e.g. /sdcard/mdm_downloads/app.apk
+//        RemoteLogger.log(context, Const.LOG_INFO, "Received Install/Update app message - url " + path);
+//
+//        if (path == null) {
+//            return -1;
+//        }
+//
+//        return terminal.installOrUpdate(path);
+//    }
     private int handleInstallOrUpdate(JSONObject payload) throws JSONException {
-        String path = payload.getString("path"); // e.g. /sdcard/mdm_downloads/app.apk
-        return terminal.installOrUpdate(path);
+        final String apkUrl = payload.getString("apkUrl");
+//    final String pkg = payload.optString("packageName", null); // optional (helps logging/validation)
+
+        RemoteLogger.log(context, Const.LOG_INFO,
+                "Received TYPE_INSTALL_OR_UPDATE push message - apkurl=" + apkUrl);
+
+        if (apkUrl == null || apkUrl.trim().isEmpty()) {
+            RemoteLogger.log(context, Const.LOG_ERROR, "apkUrl is null/empty");
+            return -1;
+        }
+
+        // Run everything (download + install) on a worker thread
+        AsyncTask.execute(() -> {
+            AtomicBoolean toastRunning = new AtomicBoolean(true);
+            Handler mainHandler = new Handler(Looper.getMainLooper());
+
+            Runnable stickyToastRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    if (!toastRunning.get()) return;
+                    showToast(context, "App update is running, please wait...");
+                    mainHandler.postDelayed(this, TOAST_INTERVAL_MS);
+                }
+            };
+
+            mainHandler.post(stickyToastRunnable);
+
+            try {
+                RemoteLogger.log(context, Const.LOG_INFO, "Starting APK download: " + apkUrl);
+                showToast(context, "Starting app download...");
+
+                // 1) BLOCKING download – returns only after file is fully written
+                String localApkPath = downloadApkFileWithOkHttp(context, apkUrl);
+
+                RemoteLogger.log(context, Const.LOG_INFO, "APK download finished, path=" + localApkPath);
+                Log.i("APK", "Downloaded APK to: " + localApkPath);
+//            showToast(context, "App download completed");
+
+                File f = new File(localApkPath);
+                if (!f.exists() || f.length() == 0) {
+                    RemoteLogger.log(context, Const.LOG_ERROR,
+                            "APK file missing or empty after download: " + localApkPath);
+                    toastRunning.set(false);
+                    return;
+                }
+
+                // 2) Install/Update
+                showToast(context, "Installing app...");
+                RemoteLogger.log(context, Const.LOG_INFO, "Installing APK: " + localApkPath);
+                OnAppUpdateListener appInstallListener = new OnAppUpdateListener() {
+
+                    @Override
+                    public void onSuccess() {
+                        toastRunning.set(false); // stop sticky toast
+                        showToast(context, "Application install/update successful");
+                        RemoteLogger.log(context, Const.LOG_INFO, "APK updated successfully");
+                    }
+
+                    @Override
+                    public void onError(String msg, int code) {
+                        toastRunning.set(false); // stop sticky toast
+                        showToast(context, "Application install/update failed: " + msg + " (code " + code + ")");
+                        RemoteLogger.log(context, Const.LOG_ERROR,
+                                "OTA error code=" + code + ", detail=" + msg);
+                    }
+                };
+                terminal.installOrUpdateWithListener(localApkPath, appInstallListener);
+
+            } catch (Exception e) {
+                toastRunning.set(false);
+                showToast(context, "Install/Update process failed: " + e.getMessage());
+                RemoteLogger.log(context, Const.LOG_ERROR, "Install process failed: " + e);
+                Log.e("APK", "Download or install/update failed", e);
+            }
+        });
+
+        // method returns immediately; download/install continues in background
+        return 0;
     }
 
     private int handleUninstall(JSONObject payload) throws JSONException {
         RemoteLogger.log(context, Const.LOG_INFO, "payload: " + payload.toString());
+
         String pkg = payload.getString("pkg");
         return terminal.unInstall(pkg);
     }
@@ -384,7 +480,7 @@ public class KozenCommandHandler {
         }
         // Run everything (download + OTA) on a worker thread
 //        Executors.newSingleThreadExecutor().execute(() -> {
-        AsyncTask.execute(()->{
+        AsyncTask.execute(() -> {
             // flag to control "never off" toast
             AtomicBoolean toastRunning = new AtomicBoolean(true);
             Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -397,7 +493,7 @@ public class KozenCommandHandler {
                         return; // stop loop
                     }
                     showToast(context, "OTA is running, please wait...");
-                    mainHandler.postDelayed(this, OTA_TOAST_INTERVAL_MS);
+                    mainHandler.postDelayed(this, TOAST_INTERVAL_MS);
                 }
             };
 
@@ -465,6 +561,60 @@ public class KozenCommandHandler {
             .readTimeout(10, TimeUnit.MINUTES)   // large file -> long timeout
             .writeTimeout(10, TimeUnit.MINUTES)
             .build();
+
+    public static String downloadApkFileWithOkHttp(Context context, String urlString) throws IOException {
+        String fileName = urlString.substring(urlString.lastIndexOf('/') + 1);
+        if (!fileName.endsWith(".apk")) {
+            throw new IOException("APK file must be .apk, got: " + fileName);
+        }
+
+        File outFile = new File(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                fileName
+        );
+        File parent = outFile.getParentFile();
+        if (parent != null && !parent.exists()) {
+            //noinspection ResultOfMethodCallIgnored
+            parent.mkdirs();
+        }
+
+        Request request = new Request.Builder().url(urlString).get().build();
+
+        try (Response response = OTA_HTTP_CLIENT.newCall(request).execute()) {
+            if (!response.isSuccessful()) {
+                throw new IOException("Unexpected HTTP code " + response.code());
+            }
+            ResponseBody body = response.body();
+            if (body == null) throw new IOException("Empty response body");
+
+            long contentLength = body.contentLength();
+            RemoteLogger.log(context, Const.LOG_INFO,
+                    "Starting APK download, size=" + contentLength + " bytes");
+
+            try (InputStream in = new BufferedInputStream(body.byteStream());
+                 FileOutputStream out = new FileOutputStream(outFile)) {
+
+                byte[] buffer = new byte[8192];
+                int read;
+                long totalRead = 0L;
+
+                while ((read = in.read(buffer)) != -1) {
+                    out.write(buffer, 0, read);
+                    totalRead += read;
+
+                    if (contentLength > 0 && totalRead % (20L * 1024 * 1024) < 8192) { // every ~20MB
+                        int progress = (int) (100L * totalRead / contentLength);
+//                        showToast(context, "Downloading: " + progress + "%");
+                        Log.d("APK", "Download progress: " + progress + "% (" +
+                                (totalRead / (1024 * 1024)) + " MB)");
+                    }
+                }
+                out.flush();
+            }
+            showToast(context, "Download completed");
+            return outFile.getAbsolutePath();
+        }
+    }
 
     public static String downloadOtaFileWithOkHttp(Context context, String urlString) throws IOException {
         // Extract file name

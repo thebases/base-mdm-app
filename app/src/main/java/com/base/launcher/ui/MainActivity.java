@@ -50,6 +50,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.databinding.DataBindingUtil;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.recyclerview.widget.GridLayoutManager;
@@ -623,8 +624,9 @@ public class MainActivity
             preferences.getInt(Const.PREFERENCES_ACCESSIBILITY_SERVICE, Const.PREFERENCES_OFF) == Const.PREFERENCES_ON) {
             startService(new Intent(MainActivity.this, CheckForegroundAppAccessibilityService.class));
         }
-        startService(new Intent(MainActivity.this, StatusControlService.class));
-
+        Intent i = new Intent(MainActivity.this, StatusControlService.class);
+//        startService(new Intent(MainActivity.this, StatusControlService.class));
+        ContextCompat.startForegroundService(this, i);
         // Moved to onResume!
         // https://stackoverflow.com/questions/51863600/java-lang-illegalstateexception-not-allowed-to-start-service-intent-from-activ
         startService(new Intent(MainActivity.this, PluginApiService.class));
@@ -1905,7 +1907,21 @@ public class MainActivity
         if (needSendDeviceInfoAfterReconfigure) {
             needSendDeviceInfoAfterReconfigure = false;
             SendDeviceInfoTask sendDeviceInfoTask = new SendDeviceInfoTask(this);
-            DeviceInfo deviceInfo = DeviceInfoProvider.getDeviceInfo(this, true, true);
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                // TODO: Consider calling
+                //    ActivityCompat#requestPermissions
+                // here to request the missing permissions, and then overriding
+                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                //                                          int[] grantResults)
+                // to handle the case where the user grants the permission. See the documentation
+                // for ActivityCompat#requestPermissions for more details.
+                return;
+            }
+            DeviceInfo deviceInfo = null;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                deviceInfo = DeviceInfoProvider.getDeviceInfo(this, true, true);
+                Log.d("BaseMDM","=====>>"+deviceInfo.toString());
+            }
             sendDeviceInfoTask.execute(deviceInfo);
         }
     }

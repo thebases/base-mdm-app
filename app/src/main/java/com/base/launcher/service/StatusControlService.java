@@ -1,5 +1,9 @@
 package com.base.launcher.service;
 
+import android.Manifest;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
@@ -9,12 +13,16 @@ import android.content.IntentFilter;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.wifi.WifiManager;
+import android.os.Build;
 import android.os.IBinder;
 import android.util.Log;
 
+import androidx.annotation.RequiresPermission;
+import androidx.core.app.NotificationCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.base.launcher.Const;
+import com.base.launcher.R;
 import com.base.launcher.helper.SettingsHelper;
 import com.base.launcher.json.ServerConfig;
 import com.base.launcher.util.Utils;
@@ -71,6 +79,7 @@ public class StatusControlService extends Service {
         super.onDestroy();
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     @Override
     public int onStartCommand( Intent intent, int flags, int startId) {
         settingsHelper = SettingsHelper.getInstance(this);
@@ -115,6 +124,7 @@ public class StatusControlService extends Service {
         Log.i(Const.LOG_TAG, "StatusControlService: control disabled for 60 sec");
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     private void controlStatus() {
         ServerConfig config = settingsHelper.getConfig();
         if (config == null || controlDisabled) {
@@ -197,6 +207,35 @@ public class StatusControlService extends Service {
     @Override
     public IBinder onBind(Intent intent) {
         return null;
+    }
+
+    private static final int NOTI_ID = 1001;
+    private static final String CH_ID = "mdm_status";
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        ensureChannel();
+        startForeground(NOTI_ID, buildNotification());
+    }
+
+    private void ensureChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel ch = new NotificationChannel(
+                    CH_ID, "MDM Status", NotificationManager.IMPORTANCE_LOW);
+            NotificationManager nm = getSystemService(NotificationManager.class);
+            nm.createNotificationChannel(ch);
+        }
+    }
+
+    private Notification buildNotification() {
+        return new NotificationCompat.Builder(this, CH_ID)
+                .setContentTitle("Base Device management active")
+                .setContentText("Monitoring device status")
+                .setSmallIcon(R.drawable.ic_mqtt_service)
+                .setOngoing(true)
+                .setCategory(NotificationCompat.CATEGORY_SERVICE)
+                .build();
     }
 
 }
