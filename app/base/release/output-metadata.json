@@ -11,9 +11,9 @@
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
-      "versionCode": 1001,
-      "versionName": "1.0.0.1",
-      "outputFile": "base_agent_release_v1.0.0.1_10122025.apk"
+      "versionCode": 1002,
+      "versionName": "1.0.0.2",
+      "outputFile": "base_agent_release_v1.0.0.2_18122025.apk"
     }
   ],
   "elementType": "File",
@@ -22,16 +22,16 @@
       "minApi": 28,
       "maxApi": 30,
       "baselineProfiles": [
-        "baselineProfiles/1/base_agent_release_v1.0.0.1_10122025.dm"
+        "baselineProfiles/1/base_agent_release_v1.0.0.2_18122025.dm"
       ]
     },
     {
       "minApi": 31,
       "maxApi": 2147483647,
       "baselineProfiles": [
-        "baselineProfiles/0/base_agent_release_v1.0.0.1_10122025.dm"
+        "baselineProfiles/0/base_agent_release_v1.0.0.2_18122025.dm"
       ]
     }
   ],
-  "minSdkVersionForDexing": 24
+  "minSdkVersionForDexing": 29
 }

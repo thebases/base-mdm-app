@@ -21,8 +21,8 @@ android {
         applicationId "com.base.launcher"
         minSdk 29
         targetSdk 34
-        versionCode 1001
-        versionName '1.0.0.1'
+        versionCode 1008
+        versionName '1.0.0.8'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         dataBinding {
             enabled = true
@@ -49,7 +49,7 @@ android {
         // Enables Push notifications. Setting it to false will stop automatic configuration updates after changing it on the server.
         buildConfigField("Boolean", "ENABLE_PUSH", "true")
         // MQTT port for Push notifications
-        buildConfigField("String", "MQTT_DOMAIN", "\"mqtt.thebase.vn\"")
+        buildConfigField("String", "MQTT_DOMAIN", "\"mq.thebeanfamily.org\"")
         buildConfigField("Integer", "MQTT_PORT", "18883")
         buildConfigField("Boolean", "MQTT_TLS", "true")
         buildConfigField("Integer", "MQTT_QOS", "1")

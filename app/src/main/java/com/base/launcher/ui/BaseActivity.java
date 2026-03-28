@@ -19,12 +19,15 @@
 
 package com.base.launcher.ui;
 
+import static android.preference.PreferenceManager.getDefaultSharedPreferences;
+
 import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.app.admin.DevicePolicyManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Handler;
 import android.util.Log;
@@ -40,6 +43,8 @@ import androidx.databinding.DataBindingUtil;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.base.launcher.databinding.DialogEnterMqttServerBinding;
+import com.base.launcher.databinding.DialogUpdateFirmwareBinding;
+import com.base.launcher.util.RemoteLogger;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 import com.base.launcher.BuildConfig;
@@ -55,6 +60,8 @@ import com.base.launcher.json.ServerConfig;
 import com.base.launcher.server.ServerUrl;
 import com.base.launcher.util.DeviceInfoProvider;
 import com.base.launcher.util.Utils;
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 
 import org.json.JSONObject;
 
@@ -84,6 +91,10 @@ public class BaseActivity extends AppCompatActivity {
 
     protected Dialog deviceInfoDialog;
     protected DialogDeviceInfoBinding dialogDeviceInfoBinding;
+
+    protected Dialog deviceOtaDialog;
+    protected DialogUpdateFirmwareBinding dialogUpdateFirmwareBinding;
+
 
     protected void dismissDialog(Dialog dialog) {
         if (dialog != null) {
@@ -424,10 +435,64 @@ public class BaseActivity extends AppCompatActivity {
 
         deviceInfoDialog.show();
     }
-
     public void closeDeviceInfoDialog( View view ) {
         dismissDialog(deviceInfoDialog);
     }
+
+    @SuppressLint( { "MissingPermission" } )
+    protected void createAndShowOtaDialog() {
+        String defaultPrefsFile = getPackageName() + "_preferences";
+        SharedPreferences prefs = getSharedPreferences(defaultPrefsFile, Context.MODE_PRIVATE);
+        if (prefs.contains("otaUrl")) {
+            dismissDialog(deviceInfoDialog);
+            deviceOtaDialog = new Dialog(this);
+            dialogUpdateFirmwareBinding = DataBindingUtil.inflate(
+                    LayoutInflater.from(this),
+                    R.layout.dialog_update_firmware,
+                    null,
+                    false);
+            deviceOtaDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+            deviceOtaDialog.setCancelable(false);
+
+            deviceOtaDialog.setContentView(dialogUpdateFirmwareBinding.getRoot());
+
+            dialogUpdateFirmwareBinding.setNewOs("1234");
+
+            SettingsHelper settingsHelper = SettingsHelper.getInstance(this);
+
+            dialogUpdateFirmwareBinding.setOldOs("6789");
+
+
+            dialogUpdateFirmwareBinding.setDeviceId(SettingsHelper.getInstance(this).getDeviceId());
+            dialogUpdateFirmwareBinding.setChangeLog("Change logs:");
+
+            String serverPath = SettingsHelper.getInstance(this).getServerProject();
+            if (serverPath.length() > 0) {
+                serverPath = "/" + serverPath;
+            }
+            dialogUpdateFirmwareBinding.setServerUrl(SettingsHelper.getInstance(this).getBaseUrl() + serverPath);
+
+            deviceOtaDialog.show();
+        }
+    }
+    public void updateOTA( View view ) {
+        dismissDialog(deviceOtaDialog);
+        // PreferenceManager.getDefaultSharedPreferences is deprecated.
+        // We replicate its behavior by using the default file name: packagename_preferences
+        String defaultPrefsFile = getPackageName() + "_preferences";
+        SharedPreferences prefs = getSharedPreferences(defaultPrefsFile, Context.MODE_PRIVATE);
+
+        if (prefs.contains("otaUrl")) {
+            RemoteLogger.log(this,Const.LOG_INFO, "===>> yes");
+        } else{
+            RemoteLogger.log(this,Const.LOG_INFO, "===>> yes");
+        }
+    }
+    public void closeOTADialog( View view ) {
+        dismissDialog(deviceOtaDialog);
+    }
+
+
 
 
     public void exitToSystemLauncher( View view ) {

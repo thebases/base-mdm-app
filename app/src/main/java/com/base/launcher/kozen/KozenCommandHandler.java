@@ -1,12 +1,14 @@
 package com.base.launcher.kozen;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
+import android.preference.PreferenceManager;
 
 import com.base.launcher.Const;
 import com.base.launcher.util.RemoteLogger;
@@ -472,6 +474,7 @@ public class KozenCommandHandler {
     }
 
     private int handleUpdateOta(JSONObject payload) throws JSONException {
+
         String path = payload.getString("otaUrl"); // OTA file
         RemoteLogger.log(context, Const.LOG_INFO, "Received TYPE_UPDATE_OTA push message - otaUrl " + path);
 
