@@ -1,0 +1,4 @@
+interface:
+  display_name: "Base Engineer"
+  short_description: "Implement Go services, React UI, and platform workflows"
+  default_prompt: "Use $dev-go to implement or fix this Go, React, or platform workflow end to end."

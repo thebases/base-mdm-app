@@ -1,0 +1,4 @@
+interface:
+  display_name: "Base Product"
+  short_description: "Write specs, plans, and AI-ready product documents"
+  default_prompt: "Use $product-manager to analyze this request and produce the right spec, plan, or product document."

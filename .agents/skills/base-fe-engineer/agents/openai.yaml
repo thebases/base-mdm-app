@@ -1,0 +1,4 @@
+interface:
+  display_name: "Frontend Builder"
+  short_description: "TypeScript Next.js 14 UI with JSON-RPC"
+  default_prompt: "Use $dev-fe to build or update this TypeScript Next.js 14 frontend with shadcn/ui, Tailwind, Zod, Zustand, and lib/jsonv2.ts."

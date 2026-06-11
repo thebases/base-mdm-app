@@ -1,0 +1,291 @@
+---
+name: base-code-review
+description: |
+  Provides comprehensive code review guidance for React 19, Vue 3, Angular 17+, Svelte 5, Rust, TypeScript, Java, Python, Django, Go, C#/.NET, Kotlin, NestJS, C/C++, and more.
+  Helps catch bugs, improve code quality, and give constructive feedback.
+  Use when: reviewing pull requests, conducting PR reviews, code review, reviewing code changes,
+  establishing review standards, mentoring developers, architecture reviews, security audits,
+  checking code quality, finding bugs, giving feedback on code.
+allowed-tools:
+  - Read
+  - Grep
+  - Glob
+  - Bash # 运行 lint/test/build 命令验证代码质量
+  - WebFetch # 查阅最新文档和最佳实践
+---
+
+# Code Review Excellence
+
+Transform code reviews from gatekeeping to knowledge sharing through constructive feedback, systematic analysis, and collaborative improvement.
+
+## When to Use This Skill
+
+- Reviewing pull requests and code changes
+- Establishing code review standards for teams
+- Mentoring junior developers through reviews
+- Conducting architecture reviews
+- Creating review checklists and guidelines
+- Improving team collaboration
+- Reducing code review cycle time
+- Maintaining code quality standards
+
+## Core Principles
+
+### 1. The Review Mindset
+
+**Goals of Code Review:**
+
+- Catch bugs and edge cases
+- Ensure code maintainability
+- Share knowledge across team
+- Enforce coding standards
+- Improve design and architecture
+- Build team culture
+
+**Not the Goals:**
+
+- Show off knowledge
+- Nitpick formatting (use linters)
+- Block progress unnecessarily
+- Rewrite to your preference
+
+### 2. Effective Feedback
+
+**Good Feedback is:**
+
+- Specific and actionable
+- Educational, not judgmental
+- Focused on the code, not the person
+- Balanced (praise good work too)
+- Prioritized (critical vs nice-to-have)
+
+```markdown
+❌ Bad: "This is wrong."
+✅ Good: "This could cause a race condition when multiple users
+access simultaneously. Consider using a mutex here."
+
+❌ Bad: "Why didn't you use X pattern?"
+✅ Good: "Have you considered the Repository pattern? It would
+make this easier to test. Here's an example: [link]"
+
+❌ Bad: "Rename this variable."
+✅ Good: "[nit] Consider `userCount` instead of `uc` for
+clarity. Not blocking if you prefer to keep it."
+```
+
+### 3. Review Scope
+
+**What to Review:**
+
+- Logic correctness and edge cases
+- Security vulnerabilities
+- Performance implications
+- Test coverage and quality
+- Error handling
+- Documentation and comments
+- API design and naming
+- Architectural fit
+
+**What Not to Review Manually:**
+
+- Code formatting (use Prettier, Black, etc.)
+- Import organization
+- Linting violations
+- Simple typos
+
+## Review Process
+
+### Phase 1: Context Gathering (2-3 minutes)
+
+Before diving into code, understand:
+
+1. Read PR description and linked issue
+2. Check PR size (>400 lines? Ask to split)
+3. Review CI/CD status (tests passing?)
+4. Understand the business requirement
+5. Note any relevant architectural decisions
+
+### Phase 2: High-Level Review (5-10 minutes)
+
+1. **Architecture & Design** - Does the solution fit the problem?
+   - For significant changes, consult [Architecture Review Guide](reference/architecture-review-guide.md)
+   - Check: SOLID principles, coupling/cohesion, anti-patterns
+2. **Performance Assessment** - Are there performance concerns?
+   - For performance-critical code, consult [Performance Review Guide](reference/performance-review-guide.md)
+   - Check: Algorithm complexity, N+1 queries, memory usage
+3. **File Organization** - Are new files in the right places?
+4. **Testing Strategy** - Are there tests covering edge cases?
+
+### Phase 3: Line-by-Line Review (10-20 minutes)
+
+For each file, check:
+
+- **Logic & Correctness** - Edge cases, off-by-one, null checks, race conditions
+- **Security** - Input validation, injection risks, XSS, sensitive data
+- **Performance** - N+1 queries, unnecessary loops, memory leaks
+- **Maintainability** - Clear names, single responsibility, comments
+- **Reuse** - Before accepting new code, search for existing utilities/helpers that could replace it. Check adjacent files and shared modules for similar patterns. See [Universal Quality Guide](reference/code-quality-universal.md) for anti-patterns like parameter sprawl, leaky abstractions, nested conditionals, stringly-typed code, TOCTOU, and no-op updates.
+
+### Phase 4: Summary & Decision (2-3 minutes)
+
+1. Summarize key concerns
+2. Highlight what you liked
+3. Make clear decision:
+   - ✅ Approve
+   - 💬 Comment (minor suggestions)
+   - 🔄 Request Changes (must address)
+4. Offer to pair if complex
+
+## Review Techniques
+
+### Technique 1: The Checklist Method
+
+Use checklists for consistent reviews. See [Security Review Guide](reference/security-review-guide.md) for comprehensive security checklist.
+
+### Technique 2: The Question Approach
+
+Instead of stating problems, ask questions:
+
+```markdown
+❌ "This will fail if the list is empty."
+✅ "What happens if `items` is an empty array?"
+
+❌ "You need error handling here."
+✅ "How should this behave if the API call fails?"
+```
+
+### Technique 3: Suggest, Don't Command
+
+Use collaborative language:
+
+```markdown
+❌ "You must change this to use async/await"
+✅ "Suggestion: async/await might make this more readable. What do you think?"
+
+❌ "Extract this into a function"
+✅ "This logic appears in 3 places. Would it make sense to extract it?"
+```
+
+### Technique 4: Differentiate Severity
+
+Use labels to indicate priority:
+
+- 🔴 `[blocking]` - Must fix before merge
+- 🟡 `[important]` - Should fix, discuss if disagree
+- 🟢 `[nit]` - Nice to have, not blocking
+- 💡 `[suggestion]` - Alternative approach to consider
+- 📚 `[learning]` - Educational comment, no action needed
+- 🎉 `[praise]` - Good work, keep it up!
+
+## Language-Specific Guides
+
+According to the reviewed code language, consult the corresponding detailed guide:
+
+| Language/Framework | Reference File | Key Topics |
+
+|-------------------|----------------|------------|
+
+| **React** | [React Guide](reference/react.md) | Hooks, useEffect, React 19 Actions, RSC, Suspense, TanStack Query v5 |
+
+| **Vue 3** | [Vue Guide](reference/vue.md) | Composition API, Responsive System, Props/Emits, Watchers, Composables |
+
+| **Angular 17+** | [Angular Guide](reference/angular.md) | Signals, Standalone Components, RxJS, Zoneless Change Detection, Template Optimization |
+
+| **Rust** | [Rust Guide](reference/rust.md) | Ownership/Borrowing, Unsafe Inspection, Asynchronous Code, Unsafety, Error Handling |
+
+| **TypeScript** | [TypeScript Guide](reference/typescript.md) | Type Safety, async/await, immutability |
+| **Python** | [Python Guide](reference/python.md) | Variable default arguments, exception handling, class attributes |
+| **Django / DRF** | [Django Guide](reference/django.md) | Security Audit, N+1 Queries, Serializer Anti-pattern, ViewSet, Asynchronous Views |
+
+| **FastAPI** | [FastAPI Guide](reference/fastapi.md) | Depends, Pydantic v2 validation, async correctness, sessions/N+1, auth vs authorization, test-driven verification |
+
+| **Java** | [Java Guide](reference/java.md) | Java 17/21 New Features, Spring Boot 3, Virtual Threads, Stream/Optional |
+
+| **C# / .NET** | [C# Guide](reference/csharp.md) | C# 12 Features, Asynchronous Programming, EF Core Performance, ASP.NET Core, LINQ |
+
+| **Go** | [Go Guide](reference/go.md) | Error Handling, goroutines/channels, context, Interface Design |
+
+| **Kotlin / Android** | [Kotlin Guide](reference/kotlin.md) | Coroutines, Flow, Jetpack Compose, Null Safety, Memory Leaks, Architectural Patterns |
+
+| **NestJS** | [NestJS Guide](reference/nestjs.md) | Dependency Injection, Layered Architecture, DTO Validation, Guard/Interceptor, Circular Dependencies |
+
+| **Svelte / SvelteKit** | [Svelte Guide](reference/svelte.md) | Runes, Load Functions, Form Actions, Store Migration, SSR/CSR Boundaries |
+
+| **C** | [C Guide](reference/c.md) | Pointers/Buffers, Memory Safety, UB, Error Handling |
+
+| **C++** | [C++ Guide](reference/cpp.md) | RAII, Lifecycle, Rule of 0/3/5, Exception Safety |
+
+| **CSS/Less/Sass** | [CSS...](reference/cpp.md) [Guide](reference/css-less-sass.md) | Variable Specification, !important, Performance Optimization, Reactivity, Compatibility |
+
+| **Qt** | [Qt Guide](reference/qt.md) | Object Model, Signals/Slots, Memory Management, Thread Safety, Performance |
+
+## Cross-Cutting Guides
+
+Language-agnostic patterns applicable to all code reviews:
+
+| Topic                 | Reference File                                                 | Key Topics                                                                                                                          |
+| --------------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **Universal Quality** | [Universal Quality Guide](reference/code-quality-universal.md) | Reuse audit, parameter sprawl, leaky abstractions, nested conditionals, stringly-typed code, TOCTOU, no-op updates, redundant state |
+
+## Additional Resources
+
+- [Architecture Review Guide](reference/architecture-review-guide.md) - Architecture Review Guide (SOLID, Anti-patterns, Coupling)
+
+- [Performance Review Guide](reference/performance-review-guide.md) - Performance Review Guide (Web Vitals, N+1, Complexity)
+
+- [Common Bugs Checklist](reference/common-bugs-checklist.md) - Common bug checklist categorized by language
+
+- [Security Review Guide](reference/security-review-guide.md) - Security Review Guide
+
+- [Code Review Best Practices](reference/code-review-best-practices.md) - Best practices for code review
+
+- [PR Review Template](assets/pr-review-template.md) - PR review comment template
+
+- [Review Checklist](assets/review-checklist.md) - Quick Reference Checklist
+
+---
+
+## Output Rules
+
+These rules apply at the end of every review session. Execute them after delivering the review to the user.
+
+### Rule 1 — Always write a review report
+
+After completing any review, save the full findings as a Markdown file to `.agents/review/` in the project root.
+
+**Filename format:** `<YYYY-MM-DD>-<object>.md`
+- `<YYYY-MM-DD>` is today's date
+- `<object>` is a short kebab-case description of what was reviewed
+
+**Examples:**
+- `2026-06-06-backend-review.md`
+- `2026-06-06-auth-middleware-review.md`
+- `2026-06-06-edc-service-review.md`
+
+**Report must include:**
+- Date and scope at the top
+- All findings grouped by severity (🔴 Blocking / 🟡 Important / 🟢 Nit)
+- Each finding with: file path + line number, problem description, and a concrete fix suggestion
+- A summary table (severity → count → top theme) at the bottom
+
+### Rule 2 — Write a fix plan when the user asks for planning
+
+If the user's input contains the keyword **`planning`** or the phrase **`make plan`** (case-insensitive), also write a fix plan to `.agents/planning/`.
+
+**Filename format:** `<YYYY-MM-DD>-<object>-<backend or frontend>-fix-plan.md`
+
+**Examples:**
+- `2026-06-06-backend-fix-plan.md`
+- `2026-06-06-auth-middleware-fix-plan.md`
+
+**Fix plan must include:**
+- **Goal** — one sentence describing what the plan achieves
+- **Priority order** — fixes ordered from most critical to least, matching the severity grouping in the review report
+- For each fix:
+  - File(s) to change
+  - Specific action to take (what to add, remove, or change)
+  - Any dependencies between fixes (e.g., "do #1 before #3")
+- **Estimated effort** per fix (small / medium / large)
+- **Definition of done** — how to verify each fix is complete
+
+The fix plan is separate from the review report. The review report is a diagnosis; the fix plan is an actionable checklist a developer can work through sequentially.
