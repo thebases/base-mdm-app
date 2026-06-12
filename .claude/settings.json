@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Git\\\\thebase\\\\base-mdm-app\" -Directory -Force | Select-Object -First 20 | ForEach-Object { $_.Name })",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Git\\\\thebase\\\\base-mdm-app\\\\app\" -Force | ForEach-Object { $_.Name })",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Git\\\\thebase\\\\base-mdm-app\\\\app\\\\src\" -Force | ForEach-Object { $_.Name })",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Git\\\\thebase\\\\base-mdm-app\\\\app\\\\src\\\\main\" -Force | ForEach-Object { $_.Name })",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Git\\\\thebase\\\\base-mdm-app\\\\app\\\\src\\\\main\\\\java\" -Force | ForEach-Object { $_.Name })",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Git\\\\thebase\\\\base-mdm-app\\\\app\\\\src\\\\main\\\\java\\\\com\" -Force | ForEach-Object { $_.Name })",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Git\\\\thebase\\\\base-mdm-app\\\\app\\\\src\\\\main\\\\java\\\\com\\\\base\" -Force | ForEach-Object { $_.Name })",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Git\\\\thebase\\\\base-mdm-app\\\\app\\\\src\\\\main\\\\java\\\\com\\\\base\\\\launcher\" -Force | ForEach-Object { $_.Name })",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Git\\\\thebase\\\\base-mdm-app\\\\app\\\\base\" -Force | ForEach-Object { $_.Name })"
+    ]
+  }
+}
