@@ -78,7 +78,6 @@
     <string name="message_turn_off_mobile_data">L\'écran des paramètres s\'ouvre. Veuillez désactiver les données mobiles sur cet écran et cliquez sur Retour.</string>
     <string name="message_set_password">La qualité de votre mot de passe n\'est pas suffisante. L\'écran des paramètres s\'ouvre. Veuillez changer le mot de passe et cliquez sur Retour.</string>
     <string name="switch_off_blockings">Désactiver les restrictions...</string>
-    <string name="kiosk_mode_requires_overlays">Mode kiosk désactivé : pas de permission pour passer par-dessus d\'autres fenêtres. Veuillez permettre à %s de passer par-dessus d\'autres fenêtres.</string>
     <string name="enter_admin_password">Entrez le mot de passe administrateur</string>
     <string name="wrong_password">Mauvais mot de passe</string>
     <string name="dialog_enter_password_login">S\'identifier</string>

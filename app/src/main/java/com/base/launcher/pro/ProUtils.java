@@ -21,12 +21,10 @@ package com.base.launcher.pro;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
 import android.location.Location;
 import android.view.View;
 
 import com.base.launcher.R;
-import com.base.launcher.json.ServerConfig;
 
 import java.util.Calendar;
 
@@ -37,10 +35,6 @@ import java.util.Calendar;
 public class ProUtils {
 
     public static boolean isPro() {
-        return false;
-    }
-
-    public static boolean kioskModeRequired(Context context) {
         return false;
     }
 
@@ -74,50 +68,6 @@ public class ProUtils {
     public static View preventApplicationsList(Activity activity) {
         // Stub
         return null;
-    }
-
-    public static View createKioskUnlockButton(Activity activity) {
-        // Stub
-        return null;
-    }
-
-    public static boolean isKioskAppInstalled(Context context) {
-        // Stub
-        return false;
-    }
-
-    public static boolean isKioskModeRunning(Context context) {
-        // Stub
-        return false;
-    }
-
-    public static Intent getKioskAppIntent(String kioskApp, Activity activity) {
-        // Stub
-        return null;
-    }
-
-    // Start COSU kiosk mode
-    public static boolean startCosuKioskMode(String kioskApp, Activity activity, boolean enableSettings) {
-        // Stub
-        return false;
-    }
-
-    // Set/update kiosk mode options (lock tack features)
-    public static void updateKioskOptions(Activity activity) {
-        // Stub
-    }
-
-    // Update app list in the kiosk mode
-    public static void updateKioskAllowedApps(String kioskApp, Activity activity, boolean enableSettings) {
-        // Stub
-    }
-
-    public static void unlockKiosk(Activity activity) {
-        // Stub
-    }
-
-    public static void processConfig(Context context, ServerConfig config) {
-        // Stub
     }
 
     public static void processLocation(Context context, Location location, String provider) {

@@ -44,7 +44,6 @@ public class ServerConfig {
     private Boolean wifi;
     private Boolean mobileData;
 
-    private Boolean kioskMode;
     private String mainApp;
 
     private Boolean lockStatusBar;
@@ -80,13 +79,6 @@ public class ServerConfig {
     private String allowedClasses;
 
     private Integer orientation;
-    private Boolean kioskHome;
-    private Boolean kioskRecents;
-    private Boolean kioskNotifications;
-    private Boolean kioskSystemInfo;
-    private Boolean kioskKeyguard;
-    private Boolean kioskLockButtons;
-    private Boolean kioskScreenOn;
     private String restrictions;
 
     private String description;
@@ -100,7 +92,6 @@ public class ServerConfig {
 
     private boolean lockSafeSettings;
     private boolean permissive;
-    private boolean kioskExit;
     private boolean disableScreenshots;
     private boolean autostartForeground;
 
@@ -269,18 +260,6 @@ public class ServerConfig {
 
     public void setMobileData(Boolean mobileData) {
         this.mobileData = mobileData;
-    }
-
-    public Boolean getKioskMode() {
-        return kioskMode;
-    }
-
-    public boolean isKioskMode() {
-        return kioskMode != null && kioskMode;
-    }
-
-    public void setKioskMode(Boolean kioskMode) {
-        this.kioskMode = kioskMode;
     }
 
     public String getMainApp() {
@@ -523,62 +502,6 @@ public class ServerConfig {
         this.orientation = orientation;
     }
 
-    public Boolean getKioskHome() {
-        return kioskHome;
-    }
-
-    public void setKioskHome(Boolean kioskHome) {
-        this.kioskHome = kioskHome;
-    }
-
-    public Boolean getKioskRecents() {
-        return kioskRecents;
-    }
-
-    public void setKioskRecents(Boolean kioskRecents) {
-        this.kioskRecents = kioskRecents;
-    }
-
-    public Boolean getKioskNotifications() {
-        return kioskNotifications;
-    }
-
-    public void setKioskNotifications(Boolean kioskNotifications) {
-        this.kioskNotifications = kioskNotifications;
-    }
-
-    public Boolean getKioskSystemInfo() {
-        return kioskSystemInfo;
-    }
-
-    public void setKioskSystemInfo(Boolean kioskSystemInfo) {
-        this.kioskSystemInfo = kioskSystemInfo;
-    }
-
-    public Boolean getKioskKeyguard() {
-        return kioskKeyguard;
-    }
-
-    public void setKioskKeyguard(Boolean kioskKeyguard) {
-        this.kioskKeyguard = kioskKeyguard;
-    }
-
-    public Boolean getKioskLockButtons() {
-        return kioskLockButtons;
-    }
-
-    public void setKioskLockButtons(Boolean kioskLockButtons) {
-        this.kioskLockButtons = kioskLockButtons;
-    }
-
-    public Boolean getKioskScreenOn() {
-        return kioskScreenOn;
-    }
-
-    public void setKioskScreenOn(Boolean kioskScreenOn) {
-        this.kioskScreenOn = kioskScreenOn;
-    }
-
     public Boolean getRunDefaultLauncher() {
         return runDefaultLauncher;
     }
@@ -609,14 +532,6 @@ public class ServerConfig {
 
     public void setPermissive(boolean permissive) {
         this.permissive = permissive;
-    }
-
-    public boolean isKioskExit() {
-        return kioskExit;
-    }
-
-    public void setKioskExit(boolean kioskExit) {
-        this.kioskExit = kioskExit;
     }
 
     public boolean isDisableScreenshots() {

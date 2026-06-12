@@ -71,9 +71,6 @@ android {
         buildConfigField("Boolean", "REQUEST_SERVER_URL", "true")
         // Set to true to debug admin receiver via remote logging
         buildConfigField("Boolean", "DEVICE_ADMIN_DEBUG", "true")
-        // Set to true to enable kiosk mode even if the app can't draw over other windows
-        // This may be required for weak devices where drawing over other windows is disabled by OS
-        buildConfigField("Boolean", "ENABLE_KIOSK_WITHOUT_OVERLAYS", "false")
         // Foreground service for MQTT: prevents OS from killing MQTT service on weak devices
         buildConfigField("Boolean", "MQTT_SERVICE_FOREGROUND", "true")
         // Set Base MDM to default launcher at early time of the first start

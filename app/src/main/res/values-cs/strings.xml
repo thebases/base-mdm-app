@@ -78,7 +78,6 @@
     <string name="message_turn_off_mobile_data">Mobilní data jsou zapnuta. Vypněte je prosím ve stavové liště.</string>
     <string name="message_set_password">Vaše heslo nesplňuje požadavky. Nyní se otevře nastavení. Prosím změnte si heslo.</string>
     <string name="switch_off_blockings">Vypínám omezení...</string>
-    <string name="kiosk_mode_requires_overlays">Režim kiosk vypnut: chybí oprávnění pro vykreslování přes aplikace. Prosím povolte oprávnění pro %s.</string>
     <string name="enter_admin_password">Zadejte administrátorské heslo</string>
     <string name="wrong_password">Špatné heslo</string>
     <string name="dialog_enter_password_login">Přihlásit se</string>

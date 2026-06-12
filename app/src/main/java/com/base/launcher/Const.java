@@ -12,7 +12,6 @@ public class Const {
     public static final String ACTION_ENABLE_SETTINGS = "ENABLE_SETTINGS";
     public static final String ACTION_PERMISSIVE_MODE = "PERMISSIVE_MODE";          // Temporary action
     public static final String ACTION_TOGGLE_PERMISSIVE = "TOGGLE_PERMISSIVE";      // Permanent action
-    public static final String ACTION_EXIT_KIOSK = "EXIT_KIOSK";
     public static final String ACTION_ADMIN_PANEL = "ADMIN_PANEL";
     public static final String ACTION_STOP_CONTROL = "STOP_CONTROL";
     public static final String ACTION_EXIT = "EXIT";
@@ -73,7 +72,6 @@ public class Const {
     public static final String SETTINGS_PACKAGE_NAME = "com.android.settings";
     public static final String GSF_PACKAGE_NAME = "com.google.android.gsf";
     public static final String SYSTEM_UI_PACKAGE_NAME = "com.android.systemui";
-    public static final String KIOSK_BROWSER_PACKAGE_NAME = "com.base.kiosk";
     public static final String APUPPET_PACKAGE_NAME = "com.base.control";
     public static final String APUPPET_SERVICE_CLASS_NAME = "com.base.control.GestureDispatchService";
 
@@ -81,15 +79,12 @@ public class Const {
     public static final String QR_SECONDARY_BASE_URL_ATTR = "com.base.SECONDARY_BASE_URL";
     public static final String QR_SERVER_PROJECT_ATTR = "com.base.SERVER_PROJECT";
     public static final String QR_DEVICE_ID_ATTR = "com.base.DEVICE_ID";
-    public static final String QR_LEGACY_DEVICE_ID_ATTR = "com.base.kiosk.DEVICE_ID";
     public static final String QR_DEVICE_ID_USE_ATTR = "com.base.DEVICE_ID_USE";
     public static final String QR_CUSTOMER_ATTR = "com.base.CUSTOMER";
     public static final String QR_CONFIG_ATTR = "com.base.CONFIG";
     public static final String QR_GROUP_ATTR = "com.base.GROUP";
     public static final String QR_OPEN_WIFI_ATTR = "com.base.OPEN_WIFI";
     public static final String QR_WORK_PROFILE_ATTR = "com.base.WORK_PROFILE";
-
-    public static final int KIOSK_UNLOCK_CLICK_COUNT = 4;
 
     public static final String INTENT_PUSH_NOTIFICATION_PREFIX = "com.base.push.";
     public static final String INTENT_PUSH_NOTIFICATION_EXTRA = "com.base.PUSH_DATA";

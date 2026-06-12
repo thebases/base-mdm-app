@@ -78,7 +78,6 @@
     <string name="message_turn_off_mobile_data">Dane komórkowe są wyłączone. Otwórz pasek statusu i WYŁĄCZ dane komórkowe.</string>
     <string name="message_set_password">Wprowadzone hasło nie spełnia wymagań. Otworzy się ekran ustawień. Zmień hasło i naciśnij \"Wstecz\".</string>
     <string name="switch_off_blockings">Wyłączanie ograniczeń…</string>
-    <string name="kiosk_mode_requires_overlays">Tryb kiosku wyłączony: brak uprawnień do wyświetlania nad innymi aplikacjami. Zezwól %s na wyświetlanie nad innymi aplikacjami.</string>
     <string name="enter_admin_password">Wprowadź hasło administratora</string>
     <string name="wrong_password">Wprowadzono nieprawidłowe hasło</string>
     <string name="dialog_enter_password_login">Zaloguj</string>

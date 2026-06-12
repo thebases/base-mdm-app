@@ -77,7 +77,6 @@
     <string name="message_turn_off_mobile_data">I dati mobili sono abilitati. Apri la barra di stato e DISATTIVARE i dati mobili.</string>
     <string name="message_set_password">La qualità della tua password non è sufficientemente buona. Si aprirà la schermata delle impostazioni. Cambia la password e fai clic su Indietro.</string>
     <string name="switch_off_blockings">Disattivazione delle restrizioni...</string>
-    <string name="kiosk_mode_requires_overlays">Modalità chiosco disabilitata: nessuna autorizzazione a disegnare su altre finestre. Consenti a %s di disegnare su altre finestre.</string>
     <string name="enter_admin_password">Inserisci la password amministratore</string>
     <string name="wrong_password">Password errata</string>
     <string name="dialog_enter_password_login">Accedi</string>

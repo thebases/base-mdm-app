@@ -57,7 +57,6 @@ public class BaseMDM {
     private String custom2;
     private String custom3;
     private boolean isManaged;
-    private boolean isKiosk;
     private String imei;
     private String serial;
     private int version;
@@ -184,10 +183,6 @@ public class BaseMDM {
         return isManaged;
     }
 
-    public boolean isKiosk() {
-        return isKiosk;
-    }
-
     public String getSerial() {
         return serial;
     }
@@ -302,7 +297,6 @@ public class BaseMDM {
                 custom3 = data.getString(MDMService.KEY_CUSTOM_3);
                 // null / false values for older launcher API versions or wrong API key
                 isManaged = data.getBoolean(MDMService.KEY_IS_MANAGED);
-                isKiosk = data.getBoolean(MDMService.KEY_IS_KIOSK);
                 imei = data.getString(MDMService.KEY_IMEI);
                 serial = data.getString(MDMService.KEY_SERIAL);
             } catch (MDMException e) {

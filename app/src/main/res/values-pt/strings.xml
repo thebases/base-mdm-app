@@ -78,7 +78,6 @@
     <string name="message_turn_off_mobile_data">Rede de Dados do Celular está ativada. Por favor abra a barra de status e DESATIVE a rede de dados.</string>
     <string name="message_set_password">Sua senha não está com uma senha de boa qualidade. A tela de configurações vai ser aberta. Por favor altere sua senha e toque em Voltar.</string>
     <string name="switch_off_blockings">Desligando Restrições...</string>
-    <string name="kiosk_mode_requires_overlays">Modo Kiosk desativado: Sem permissões para sobrepor outros aplicativos. Por favor habilite %s para sobrepor os aplicativos.</string>
     <string name="enter_admin_password">Digite a senha do Administrador</string>
     <string name="wrong_password">Senha inválida</string>
     <string name="dialog_enter_password_login">Login</string>

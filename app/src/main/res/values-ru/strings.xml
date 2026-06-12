@@ -78,7 +78,6 @@
     <string name="message_turn_off_mobile_data">Мобильные данные включены. Пожалуйста, откройте статус-бар и ВЫКЛЮЧИТЕ мобильные данные.</string>
     <string name="message_set_password">Качество вашего пароля недостаточно. Сейчас откроется экран настроек. Пожалуйста, измените пароль и нажмите Назад.</string>
     <string name="switch_off_blockings">Отключаем блокировку...</string>
-    <string name="kiosk_mode_requires_overlays">Режим киоска не включен: не выдано разрешение на отображение поверх других окон приложению %s.</string>
     <string name="enter_admin_password">Введите пароль администратора</string>
     <string name="wrong_password">Неверный пароль</string>
     <string name="dialog_enter_password_login">Войти</string>

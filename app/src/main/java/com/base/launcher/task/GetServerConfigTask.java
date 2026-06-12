@@ -22,7 +22,6 @@ package com.base.launcher.task;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Build;
-import android.provider.Settings;
 import android.util.Log;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,7 +32,6 @@ import com.base.launcher.helper.SettingsHelper;
 import com.base.launcher.json.DeviceEnrollOptions;
 import com.base.launcher.json.ServerConfig;
 import com.base.launcher.json.ServerConfigResponse;
-import com.base.launcher.pro.ProUtils;
 import com.base.launcher.server.ServerService;
 import com.base.launcher.server.ServerServiceKeeper;
 import com.base.launcher.util.PushNotificationMqttWrapper;
@@ -127,18 +125,6 @@ public class GetServerConfigTask extends AsyncTask< Void, Integer, Integer > {
                 settingsHelper.setEnrollOptionCustomer(null);
                 settingsHelper.setEnrollOptionConfigName(null);
                 settingsHelper.setEnrollOptionGroup(null);
-
-                // Prevent from occasional launch in the kiosk mode without any possibility to exit!
-                if (ProUtils.kioskModeRequired(context) &&
-                        !settingsHelper.getConfig().getMainApp().equals(context.getPackageName()) &&
-                        Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
-                        !Settings.canDrawOverlays(context) && !BuildConfig.ENABLE_KIOSK_WITHOUT_OVERLAYS) {
-                        RemoteLogger.log(context, Const.LOG_WARN, "Kiosk mode disabled: no permission to draw over other windows.");
-                        settingsHelper.getConfig().setKioskMode(false);
-                        settingsHelper.updateConfig(settingsHelper.getConfig());
-                }
-
-                ProUtils.processConfig(context, serverConfig);
 
                 return Const.TASK_SUCCESS;
             } else {

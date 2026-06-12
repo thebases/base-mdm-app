@@ -39,7 +39,6 @@ public class MDMService {
     public static final String KEY_IMEI = "IMEI";
     public static final String KEY_SERIAL = "SERIAL";
     public static final String KEY_IS_MANAGED = "IS_MANAGED";
-    public static final String KEY_IS_KIOSK = "IS_KIOSK";
     public static final String KEY_ERROR = "ERROR";
 
     public static final int INITIAL_VERSION = 112;
@@ -71,18 +70,11 @@ public class MDMService {
         this.context = context;
         serviceConnection = new RemoteServiceConnection(handler);
 
-        // First we try up-to-date package
         Intent i = new Intent(Const.SERVICE_ACTION);
         i.setPackage(Const.PACKAGE);
         boolean ret = context.bindService(i, serviceConnection, Context.BIND_AUTO_CREATE);
         if (!ret) {
             android.util.Log.i("MDMService", "Failed to bind service: intent " + i.getAction() + ", package " + i.getPackage());
-            // Try legacy package
-            i.setPackage(Const.LEGACY_PACKAGE);
-            ret = context.bindService(i, serviceConnection, Context.BIND_AUTO_CREATE);
-        }
-        if (!ret) {
-            android.util.Log.i("MDMService", "Failed to bind legacy service: intent " + i.getAction() + ", package " + i.getPackage());
         }
 
         return ret;
@@ -131,7 +123,6 @@ public class MDMService {
     /**
      * Request the configuration update by the app
      * This method forces the application update even if the background update is scheduled
-     * Reason: this method may be called manually from a kiosk app
      */
     public void forceConfigUpdate() throws MDMException {
         if (mdmApi == null) {

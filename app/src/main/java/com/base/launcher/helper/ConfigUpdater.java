@@ -934,7 +934,7 @@ public class ConfigUpdater {
         ServerConfig config = settingsHelper.getConfig();
         if (config != null) {
             Intent intent = new Intent(Const.ACTION_TOGGLE_PERMISSIVE);
-            intent.putExtra(Const.EXTRA_ENABLED, config.isPermissive() || config.isKioskMode());
+            intent.putExtra(Const.EXTRA_ENABLED, config.isPermissive());
             LocalBroadcastManager.getInstance(context).sendBroadcast(intent);
         }
         setActions();

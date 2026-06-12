@@ -78,7 +78,6 @@
     <string name="message_turn_off_mobile_data">Dữ liệu di động đã bật. Vui lòng mở thanh trạng thái và TẮT dữ liệu di động.</string>
     <string name="message_set_password">Chất lượng mật khẩu của bạn không đủ tốt. Màn hình cài đặt sẽ mở. Vui lòng thay đổi mật khẩu và nhấn Quay lại.</string>
     <string name="switch_off_blockings">Đang tắt hạn chế...</string>
-    <string name="kiosk_mode_requires_overlays">Chế độ kiosk bị tắt: không có quyền vẽ trên các cửa sổ khác. Vui lòng cho phép %s vẽ trên các cửa sổ khác.</string>
     <string name="enter_admin_password">Nhập mật khẩu quản trị viên</string>
     <string name="wrong_password">Mật khẩu sai</string>
     <string name="dialog_enter_password_login">Đăng nhập</string>

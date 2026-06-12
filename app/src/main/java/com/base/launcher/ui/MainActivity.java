@@ -172,16 +172,12 @@ public class MainActivity
     private StatusBarUpdater statusBarUpdater = new StatusBarUpdater();
 
     private static boolean configInitialized = false;
-    // This flag is used to exit kiosk to avoid looping in onResume()
-    private static boolean interruptResumeFlow = false;
     private static final int BOOT_DURATION_SEC = 120;
     private static final int PAUSE_BETWEEN_AUTORUNS_SEC = 5;
     private boolean sendDeviceInfoScheduled = false;
     // This flag notifies "download error" dialog what we're downloading: application or file
     // We cannot send this flag as the method parameter because dialog calls MainActivity methods
     private boolean downloadingFile = false;
-
-    private int kioskUnlockCounter = 0;
 
     private boolean configFault = false;
 
@@ -215,8 +211,7 @@ public class MainActivity
                     if (serverConfig.getLock() != null && serverConfig.getLock()) {
                         // Device is locked by the server administrator!
                         showLockScreen();
-                    } else if ( applicationNotAllowed != null &&
-                            (!ProUtils.kioskModeRequired(MainActivity.this) || !ProUtils.isKioskAppInstalled(MainActivity.this)) ) {
+                    } else if ( applicationNotAllowed != null ) {
                         TextView textView = ( TextView ) applicationNotAllowed.findViewById( R.id.package_id );
                         textView.setText(intent.getStringExtra(Const.PACKAGE_NAME));
 
@@ -257,15 +252,6 @@ public class MainActivity
                         if (systemSettingsDialog == null || !systemSettingsDialog.isShowing()) {
                             notifyPolicyViolation(intent.getIntExtra(Const.POLICY_VIOLATION_CAUSE, 0));
                         }
-                    }
-                    break;
-
-                case Const.ACTION_EXIT_KIOSK:
-                    ServerConfig config = settingsHelper.getConfig();
-                    if (config != null) {
-                        config.setKioskMode(false);
-                        RemoteLogger.log(MainActivity.this, Const.LOG_INFO, "Exit kiosk by admin command");
-                        showContent(config);
                     }
                     break;
 
@@ -454,7 +440,6 @@ public class MainActivity
         intentFilter.addAction(Const.ACTION_HIDE_SCREEN);
         intentFilter.addAction(Const.ACTION_EXIT);
         intentFilter.addAction(Const.ACTION_POLICY_VIOLATION);
-        intentFilter.addAction(Const.ACTION_EXIT_KIOSK);
         intentFilter.addAction(Const.ACTION_ADMIN_PANEL);
         LocalBroadcastManager.getInstance(this).registerReceiver(receiver, intentFilter);
     }
@@ -472,11 +457,6 @@ public class MainActivity
         statusBarUpdater.startUpdating(this, binding.clock, binding.batteryState);
 
         startServicesWithRetry();
-
-        if (interruptResumeFlow) {
-            interruptResumeFlow = false;
-            return;
-        }
 
         if (!BuildConfig.SYSTEM_PRIVILEGES) {
             if (firstStartAfterProvisioning) {
@@ -960,43 +940,7 @@ public class MainActivity
     }
 
     private void createButtons() {
-        ServerConfig config = settingsHelper.getConfig();
-        if (ProUtils.kioskModeRequired(this) && !getPackageName().equals(settingsHelper.getConfig().getMainApp())) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
-                    !Settings.canDrawOverlays( this ) &&
-                    !BuildConfig.ENABLE_KIOSK_WITHOUT_OVERLAYS) {
-                RemoteLogger.log(this, Const.LOG_WARN, "Kiosk mode disabled: no permission to draw over other windows.");
-                Toast.makeText(this, getString(R.string.kiosk_mode_requires_overlays,
-                        getString(R.string.white_app_name)), Toast.LENGTH_LONG).show();
-                config.setKioskMode(false);
-                settingsHelper.updateConfig(config);
-                createLauncherButtons();
-                return;
-            }
-            View kioskUnlockButton = null;
-            if (config.isKioskExit()) {     // Should be true by default, but false on older web panel versions
-                kioskUnlockButton = ProUtils.createKioskUnlockButton(this);
-            }
-            if (kioskUnlockButton != null) {
-                kioskUnlockButton.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        kioskUnlockCounter++;
-                        if (kioskUnlockCounter >= Const.KIOSK_UNLOCK_CLICK_COUNT) {
-                            // We are in the main app: let's open launcher activity
-                            interruptResumeFlow = true;
-                            Intent restoreLauncherIntent = new Intent(MainActivity.this, MainActivity.class);
-                            restoreLauncherIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-                            startActivity(restoreLauncherIntent);
-                            createAndShowEnterPasswordDialog();
-                            kioskUnlockCounter = 0;
-                        }
-                    }
-                });
-            }
-        } else {
-            createLauncherButtons();
-        }
+        createLauncherButtons();
     }
 
     private void startLauncher() {
@@ -1058,9 +1002,8 @@ public class MainActivity
             // So we request permissions anyway.
             return true;
         }
-        // Usage stats is only required to detect unwanted apps
-        // when permissive mode is off and kiosk mode is also off
-        return !config.isPermissive() && !config.isKioskMode();
+        // Usage stats is only required to detect unwanted apps when permissive mode is off
+        return !config.isPermissive();
     }
 
     // Access to usage statistics is required in the Pro-version only
@@ -1101,11 +1044,7 @@ public class MainActivity
             // So we request permissions anyway.
             return true;
         }
-        if (config.isKioskMode() && config.isKioskExit()) {
-            // We need to draw the kiosk exit button
-            return true;
-        }
-        if (!config.isKioskMode() && !config.isPermissive()) {
+        if (!config.isPermissive()) {
             // Overlay window is required to block unwanted apps
             return true;
         }
@@ -1390,13 +1329,6 @@ public class MainActivity
 
     @Override
     public void onConfigUpdateNetworkError(String errorText) {
-        if (ProUtils.isKioskModeRunning(this) && settingsHelper.getConfig() != null &&
-                !getPackageName().equals(settingsHelper.getConfig().getMainApp())) {
-            interruptResumeFlow = true;
-            Intent restoreLauncherIntent = new Intent(MainActivity.this, MainActivity.class);
-            restoreLauncherIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-            startActivity(restoreLauncherIntent);
-        }
         // Do not show the reset button if the launcher is installed by scanning a QR code
         // Only show the reset button on manual setup at first start (when config is not yet loaded)
         createAndShowNetworkErrorDialog(settingsHelper.getBaseUrl(), settingsHelper.getServerProject(), errorText,
@@ -1441,21 +1373,18 @@ public class MainActivity
 
     @Override
     public void onFileDownloadError(RemoteFile remoteFile) {
-        if (!ProUtils.kioskModeRequired(this) && !isContentShown()) {
-            // Notify the error dialog that we're downloading a file, not an app
+        if (!isContentShown()) {
             downloadingFile = true;
             createAndShowFileNotDownloadedDialog(remoteFile.getUrl());
             binding.setDownloading( false );
         } else {
-            // Avoid user interaction in kiosk mode, just ignore download error and keep the old version
-            // Also, avoid unexpected messages when the user is seeing the desktop
             configUpdater.skipDownloadFiles();
         }
     }
 
     @Override
     public void onFileInstallError(RemoteFile remoteFile) {
-        if (!ProUtils.kioskModeRequired(MainActivity.this) && !isContentShown()) {
+        if (!isContentShown()) {
             try {
                 new AlertDialog.Builder(MainActivity.this)
                         .setMessage(getString(R.string.file_create_error) + " " + remoteFile.getPath())
@@ -1472,8 +1401,6 @@ public class MainActivity
                 e.printStackTrace();
             }
         } else {
-            // Avoid user interaction in kiosk mode, just ignore download error and keep the old version
-            // Also, avoid unexpected messages when the user is seeing the desktop
             configUpdater.skipDownloadFiles();
         }
     }
@@ -1497,14 +1424,11 @@ public class MainActivity
 
     @Override
     public void onAppDownloadError(Application application) {
-        if (!ProUtils.kioskModeRequired(MainActivity.this) && !isContentShown()) {
-            // Notify the error dialog that we're downloading an app
+        if (!isContentShown()) {
             downloadingFile = false;
             createAndShowFileNotDownloadedDialog(application.getName());
             binding.setDownloading( false );
         } else {
-            // Avoid user interaction in kiosk mode, just ignore download error and keep the old version
-            // Also, avoid unexpected messages when the user is seeing the desktop
             configUpdater.skipDownloadApps();
         }
     }
@@ -1514,8 +1438,7 @@ public class MainActivity
         handler.post(new Runnable() {
             @Override
             public void run() {
-                if (!ProUtils.kioskModeRequired(MainActivity.this) && !isContentShown()) {
-
+                if (!isContentShown()) {
                     try {
                         new AlertDialog.Builder(MainActivity.this)
                                 .setMessage(getString(R.string.install_error) + " " + packageName)
@@ -1532,8 +1455,6 @@ public class MainActivity
                         e.printStackTrace();
                     }
                 } else {
-                    // Avoid unexpected messages when the config is updated "silently"
-                    // (in kiosk mode or when user is seeing the desktop
                     configUpdater.repeatDownloadApps();
                 }
             }
@@ -1693,35 +1614,6 @@ public class MainActivity
             orientationLocked = false;
         }
 
-        if (ProUtils.kioskModeRequired(this)) {
-            String kioskApp = settingsHelper.getConfig().getMainApp();
-            if (kioskApp != null && kioskApp.trim().length() > 0 &&
-                    // If Base MDM itself is set as kiosk app, the kiosk mode is already turned on;
-                    // So here we just proceed to drawing the content
-                    (!kioskApp.equals(getPackageName()) || !ProUtils.isKioskModeRunning(this))) {
-                if (ProUtils.getKioskAppIntent(kioskApp, this) != null && startKiosk(kioskApp)) {
-                    getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-                    return;
-                } else {
-                    Log.e(Const.LOG_TAG, "Kiosk mode failed, proceed with the default flow");
-                }
-            } else {
-                if (kioskApp != null && kioskApp.equals(getPackageName()) && ProUtils.isKioskModeRunning(this)) {
-                    // Here we go if the configuration is changed when launcher is in the kiosk mode
-                    ProUtils.updateKioskAllowedApps(kioskApp, this, false);
-                    ProUtils.updateKioskOptions(this);
-                } else {
-                    Log.e(Const.LOG_TAG, "Kiosk mode disabled: please setup the main app!");
-                }
-            }
-        } else {
-            if (ProUtils.isKioskModeRunning(this)) {
-                // Turn off kiosk and show desktop if it is turned off in the configuration
-                ProUtils.unlockKiosk(this);
-                openDefaultLauncher();
-            }
-        }
-
         // TODO: Somehow binding is null here which causes a crash. Not sure why this could happen.
         if ( config.getBackgroundColor() != null ) {
             try {
@@ -1825,27 +1717,6 @@ public class MainActivity
         binding.setShowContent(true);
         // We can now sleep, uh
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-    }
-
-    // Added an option to delay restarting the kiosk app
-    // Because some apps need time to finish their work
-    private boolean startKiosk(String kioskApp) {
-        String kioskDelayStr = settingsHelper.getAppPreference(getPackageName(), "kiosk_restart_delay_ms");
-        int kioskDelay = 0;
-        try {
-            if (kioskDelayStr != null) {
-                kioskDelay = Integer.parseInt(kioskDelayStr);
-            }
-        } catch (/*NumberFormat*/Exception e) {
-        }
-        if (kioskDelay == 0) {
-            // Standard flow: no delay as earlier
-            return ProUtils.startCosuKioskMode(kioskApp, MainActivity.this, false);
-        } else {
-            // Delayed kiosk start
-            handler.postDelayed(() -> ProUtils.startCosuKioskMode(kioskApp, MainActivity.this, false), kioskDelay);
-            return true;
-        }
     }
 
     private void showLockScreen() {
@@ -2301,10 +2172,6 @@ public class MainActivity
 
     public void networkErrorWifiClicked( View view ) {
         LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(Const.ACTION_ENABLE_SETTINGS));
-        if (ProUtils.kioskModeRequired(this) && ProUtils.isKioskModeRunning(this)) {
-            String kioskApp = settingsHelper.getConfig().getMainApp();
-            ProUtils.startCosuKioskMode(kioskApp, this, true);
-        }
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -2492,10 +2359,6 @@ public class MainActivity
 
     public void closeEnterPasswordDialog( View view ) {
         dismissDialog(enterPasswordDialog);
-        if (ProUtils.kioskModeRequired(this)) {
-            checkAndStartLauncher();
-            updateConfig(false);
-        }
     }
 
     public void checkAdministratorPassword( View view ) {
@@ -2524,9 +2387,6 @@ public class MainActivity
     }
 
     private void openAdminPanel() {
-        if (ProUtils.kioskModeRequired(MainActivity.this)) {
-            ProUtils.unlockKiosk(MainActivity.this);
-        }
         RemoteLogger.log(MainActivity.this, Const.LOG_INFO, "Administrator panel opened");
         startActivity( new Intent( MainActivity.this, AdminActivity.class ) );
     }

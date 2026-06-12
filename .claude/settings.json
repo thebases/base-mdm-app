@@ -9,7 +9,10 @@
       "PowerShell(Get-ChildItem -Path \"c:\\\\Git\\\\thebase\\\\base-mdm-app\\\\app\\\\src\\\\main\\\\java\\\\com\" -Force | ForEach-Object { $_.Name })",
       "PowerShell(Get-ChildItem -Path \"c:\\\\Git\\\\thebase\\\\base-mdm-app\\\\app\\\\src\\\\main\\\\java\\\\com\\\\base\" -Force | ForEach-Object { $_.Name })",
       "PowerShell(Get-ChildItem -Path \"c:\\\\Git\\\\thebase\\\\base-mdm-app\\\\app\\\\src\\\\main\\\\java\\\\com\\\\base\\\\launcher\" -Force | ForEach-Object { $_.Name })",
-      "PowerShell(Get-ChildItem -Path \"c:\\\\Git\\\\thebase\\\\base-mdm-app\\\\app\\\\base\" -Force | ForEach-Object { $_.Name })"
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Git\\\\thebase\\\\base-mdm-app\\\\app\\\\base\" -Force | ForEach-Object { $_.Name })",
+      "Bash(xargs grep -l \"kiosk\")",
+      "Bash(xargs grep -l \"enqueue\\\\|execute\")",
+      "Bash(xargs grep -l \"sendDetailedInfo\\\\|sendLocations\")"
     ]
   }
 }

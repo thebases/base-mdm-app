@@ -78,7 +78,6 @@
     <string name="message_turn_off_mobile_data">モバイルデータが有効になっています。ステータスバーを開いてモバイルデータをオフにしてください。</string>
     <string name="message_set_password">パスワードの強度が十分ではありません。設定画面よりパスワードを変更し [戻る] をクリックしてください。</string>
     <string name="switch_off_blockings">制限をオフにしています...</string>
-    <string name="kiosk_mode_requires_overlays">キオスクモードが無効です: 他のウィンドウの上に描画する権限がありません。 %s が他のウィンドウの上に描画できるようにしてください。</string>
     <string name="enter_admin_password">管理者パスワードを入力してください</string>
     <string name="wrong_password">パスワードが違います</string>
     <string name="dialog_enter_password_login">ログイン</string>

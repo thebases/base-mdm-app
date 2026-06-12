@@ -78,7 +78,6 @@
 	<string name="message_turn_off_mobile_data">啟用了移動數據。請打開狀態欄，然後關閉移動數據。</string>
 	<string name="message_set_password">您的密碼質量不夠好。設置屏幕將打開。請更改密碼，然後單擊“上一步”。</string>
 	<string name="switch_off_blockings">關閉限制...</string>
-	<string name="kiosk_mode_requires_overlays">單一模式已禁用：沒有權限繪製其他窗口。請允許%s在其他窗口上繪製。</string>
 	<string name="enter_admin_password">輸入管理員密碼</string>
 	<string name="wrong_password">密碼錯誤</string>
 	<string name="dialog_enter_password_login">登錄</string>

@@ -78,7 +78,6 @@
     <string name="message_turn_off_mobile_data">Mobile data are enabled. Por favor, abra la barra de estado y deshabilite los mismos.</string>
     <string name="message_set_password">Tu contraseña no es suficientemente segura. La pantalla de configuracion se abrira ahora. Por favor, cambie la contraseña y presione Atras.</string>
     <string name="switch_off_blockings">Deshabilitando restricciones...</string>
-    <string name="kiosk_mode_requires_overlays">Modo Kiosk deshabilitado: no se encontro permiso para sobreponerse a otras ventanas. Por favor, permita a %s sobreponerse a ventanas.</string>
     <string name="enter_admin_password">Ingrese la contraseña de Administrador</string>
     <string name="wrong_password">Contraseña invalida.</string>
     <string name="dialog_enter_password_login">Ingresar</string>
