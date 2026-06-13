@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MoMo Transaction Performance Report</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            background-color: #F6F7F9;
+            color: #2D2D2D;
+        }
+
+        /* MoMo Brand Identity System Design tokens */
+        :root {
+            --momo-pink: #A50064;
+            --momo-pink-light: #E11B74;
+            --momo-pink-bg: #FFF0F6;
+            --momo-purple: #74004B;
+            --momo-navy: #1F2245;
+            --momo-gray: #727272;
+            --momo-border: #E8EBF0;
+        }
+
+        .bg-momo-pink { background-color: var(--momo-pink); }
+        .text-momo-pink { color: var(--momo-pink); }
+        .border-momo { border-color: var(--momo-border); }
+        
+        /* Slide container matching standard presentation aspect ratio */
+        .slide-container {
+            width: 100%;
+            max-width: 1620px;
+            margin: 0 auto;
+            min-height: 850px;
+        }
+    </style>
+</head>
+<body class="p-6">
+
+    <div class="slide-container flex flex-col justify-between bg-white rounded-3xl shadow-xl border border-momo p-8 relative overflow-hidden">
+        
+        <div class="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-[#A50064] via-[#E11B74] to-[#74004B]"></div>
+
+        <header class="flex justify-between items-start mb-6 border-b border-momo pb-4">
+            <div>
+                <div class="flex items-center gap-3">
+                    <h1 class="text-2xl font-bold tracking-tight text-[#1F2245]">EDC Transaction Performance</h1>
+                </div>
+                
+            </div>
+           
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow items-stretch">
+            
+            <div class="bg-[#FAFAFC] p-5 rounded-2xl border border-momo flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="w-2.5 h-5 bg-momo-pink rounded-full"></span>
+                        <h2 class="text-base font-bold text-[#1F2245]">Monthly GMV by Product Type</h2>
+                    </div>
+                    <!-- <p class="text-xs text-gray-400 mb-4">Stacked GMV Volume (Data Range: A9:F11)</p> -->
+                </div>
+                <div class="relative h-[480px] w-full">
+                    <canvas id="gmvChart"></canvas>
+                </div>
+            </div>
+
+            <div class="bg-[#FAFAFC] p-5 rounded-2xl border border-momo flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="w-2.5 h-5 bg-[#74004B] rounded-full"></span>
+                        <h2 class="text-base font-bold text-[#1F2245]">Transaction Mix by Card Method</h2>
+                    </div>
+                    <!-- <p class="text-xs text-gray-400 mb-4">100% Stacked Share with Data Labels (Data Range: J17:O24)</p> -->
+                </div>
+                <div class="relative h-[480px] w-full">
+                    <canvas id="mixChart"></canvas>
+                </div>
+            </div>
+
+            <div class="bg-[#FAFAFC] p-5 rounded-2xl border border-momo flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="w-2.5 h-5 bg-[#E11B74] rounded-full"></span>
+                        <h2 class="text-base font-bold text-[#1F2245]">Success Rate vs Threshold Targets</h2>
+                    </div>
+                    <!-- <p class="text-xs text-gray-400 mb-4">Monthly Trends Split by QR & Card (Data Range: B26:G27)</p> -->
+                </div>
+                <div class="relative h-[480px] w-full">
+                    <canvas id="successRateChart"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+        <footer class="mt-6 pt-4 border-t border-momo flex justify-between items-center text-xs text-gray-400">
+            <div>MoMo Management Information System Report &bull; Slide View</div>
+            <p class=" mt-1 text-xs text-gray-400">Data Source: Operational Performance Analytics | Mar - 11 Jun (Months 3 to 6) </p>
+        </footer>
+    </div>
+
+    <script>
+        // Registering DataLabels plugin globally for custom data-label display logic
+        Chart.register(ChartDataLabels);
+
+        const labelsMonths = ['Month 3', 'Month 4', 'Month 5', 'Month 6'];
+
+        // --- CHART 1: Monthly GMV by QR, Domestic Card, & Global Card (Stacked Bar, A9:F11) ---
+        const gmvCtx = document.getElementById('gmvChart').getContext('2d');
+        new Chart(gmvCtx, {
+            type: 'bar',
+            data: {
+                labels: labelsMonths,
+                datasets: [
+                    {
+                        label: 'QR',
+                        data: [6300798758, 8309928335, 8380073947, 4783227021],
+                        backgroundColor: '#A50064',
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Domestic Card',
+                        data: [604896459, 2624764770, 3446427162, 1709117335],
+                        backgroundColor: '#E11B74',
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Global Card',
+                        data: [0, 130928090, 653183497, 744125816],
+                        backgroundColor: '#74004B',
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { stacked: true, grid: { display: false } },
+                    y: { 
+                        stacked: true,
+                        ticks: { callback: value => (value / 1e9).toFixed(1) + 'B' }
+                    }
+                },
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12, usePointStyle: true } },
+                    datalabels: {
+                        color: '#FFF',
+                        anchor: 'center',
+                        align: 'center',
+                        font: { weight: '600', size: 10 },
+                        formatter: value => value > 300000000 ? (value / 1e9).toFixed(1) + 'B' : ''
+                    }
+                }
+            }
+        });
+
+        // --- CHART 2: Transaction Count Mix % by Payment Method (J17:O24) ---
+        // Accurately calculated percentage parts based on volume ratios matching the requested layout
+        const mixCtx = document.getElementById('mixChart').getContext('2d');
+        new Chart(mixCtx, {
+            type: 'bar',
+            data: {
+                labels: labelsMonths,
+                datasets: [
+                    {
+                        label: 'Google/Apple Pay (CM)',
+                        data: [0.0, 19.3, 11.2, 10.4], 
+                        backgroundColor: '#A50064'
+                    },
+                    {
+                        label: 'Contactless',
+                        data: [96.9, 75.3, 75.4, 79.4],
+                        backgroundColor: '#E11B74'
+                    },
+                    {
+                        label: 'Chip (Contact)',
+                        data: [3.1, 5.4, 13.4, 10.2],
+                        backgroundColor: '#74004B'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { stacked: true, grid: { display: false } },
+                    y: { stacked: true, max: 100, ticks: { callback: value => value + '%' } }
+                },
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 10, usePointStyle: true, font: { size: 10 } } },
+                    datalabels: {
+                        color: '#FFF',
+                        anchor: 'center',
+                        align: 'center',
+                        display: true, // "must show data label for each part"
+                        font: { size: 10, weight: '600' },
+                        formatter: value => value > 0 ? value.toFixed(1) + '%' : ''
+                    }
+                }
+            }
+        });
+
+        // --- CHART 3: Success Rate Split (QR vs Card) + Target Lines (B26:G27) ---
+        const successCtx = document.getElementById('successRateChart').getContext('2d');
+        new Chart(successCtx, {
+            type: 'line',
+            data: {
+                labels: labelsMonths,
+                datasets: [
+                    {
+                        label: 'Card Success Rate',
+                        data: [84.99, 87.24, 96.39, 97.40], // Row 26
+                        borderColor: '#E11B74',
+                        backgroundColor: '#E11B74',
+                        tension: 0.1,
+                        borderWidth: 3,
+                        pointRadius: 4
+                    },
+                    {
+                        label: 'QR Success Rate',
+                        data: [99.64, 99.72, 99.86, 99.86], // Row 27
+                        borderColor: '#A50064',
+                        backgroundColor: '#A50064',
+                        tension: 0.1,
+                        borderWidth: 3,
+                        pointRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { min: 80, max: 102, ticks: { callback: value => value + '%' } }
+                },
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12, usePointStyle: true } },
+                    datalabels: {
+                        color: '#2D2D2D',
+                        anchor: 'top',
+                        align: 'top',
+                        font: { size: 10, weight: '600' },
+                        formatter: value => value.toFixed(1) + '%'
+                    },
+                    annotation: {
+                        annotations: {
+                            maxLine: {
+                                type: 'line',
+                                yMin: 95,
+                                yMax: 95,
+                                borderColor: '#10B981',
+                                borderWidth: 1.5,
+                                borderDash: [6, 4],
+                                label: {
+                                    display: true,
+                                    content: 'Avg Host to Host (95%)',
+                                    position: 'start',
+                                    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                                    color: '#047857',
+                                    font: { size: 10, weight: 'bold' }
+                                }
+                            },
+                            minLine: {
+                                type: 'line',
+                                yMin: 93,
+                                yMax: 93,
+                                borderColor: '#EF4444',
+                                borderWidth: 1.5,
+                                borderDash: [6, 4],
+                                label: {
+                                    display: true,
+                                    content: 'Avg terminal to Host (93%)',
+                                    position: 'end',
+                                    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+                                    color: '#B91C1C',
+                                    font: { size: 10, weight: 'bold' }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

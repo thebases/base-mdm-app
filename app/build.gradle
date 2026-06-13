@@ -1,4 +1,8 @@
 
+def localProps = new Properties()
+def localPropsFile = rootProject.file('local.properties')
+if (localPropsFile.exists()) { localPropsFile.withReader { localProps.load(it) } }
+
 buildscript {
     repositories {
         google()
@@ -6,6 +10,7 @@ buildscript {
     }
 }
 apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
 
 repositories {
     google()
@@ -46,60 +51,50 @@ android {
         // Enables Push notifications. Setting it to false will stop automatic configuration updates after changing it on the server.
         buildConfigField("Boolean", "ENABLE_PUSH", "true")
         // MQTT port for Push notifications
-        buildConfigField("String", "MQTT_DOMAIN", "\"mqtt.thebase.vn\"")
+        buildConfigField("String", "MQTT_DOMAIN", "\"${localProps['mqtt.domain'] ?: 'mqtt.thebase.vn'}\"")
         buildConfigField("Integer", "MQTT_PORT", "18883")
         buildConfigField("Boolean", "MQTT_TLS", "true")
         buildConfigField("Integer", "MQTT_QOS", "1")
-        buildConfigField("String", "MQTT_USERNAME", "\"basemdm\"")
-        buildConfigField("String", "MQTT_PASSWORD", "\"theBase15112023@\"")
+        buildConfigField("String", "MQTT_USERNAME", "\"${localProps['mqtt.username'] ?: ''}\"")
+        buildConfigField("String", "MQTT_PASSWORD", "\"${localProps['mqtt.password'] ?: ''}\"")
         // Set this parameter to true if you'll grant system privileges to Base MDM (signing it by system keys).
-        // This will enable silent installation and the launcher will try to get the device owner rights by updating system files.
-        // This may be useful, for example, when your device doesn't have QR code provisioning capability.
         buildConfigField("Boolean", "SYSTEM_PRIVILEGES", "true")
         // Set this parameter to true if you'd like to trust every certificate, for example, self-signed
-        // Not recommended for security purposes!
         buildConfigField("Boolean", "TRUST_ANY_CERTIFICATE", "false")
         // A shared secret to sign server config requests and MQTT (Push) messages
-        buildConfigField("String", "REQUEST_SIGNATURE", "\"068bd957181f91076e962a61c8788487\"")
+        buildConfigField("String", "REQUEST_SIGNATURE", "\"${localProps['request.signature'] ?: ''}\"")
         // Set this parameter to true if the server signature should be checked
-        // (additional protection against Man-In-The-Middle attacks)
         buildConfigField("Boolean", "CHECK_SIGNATURE", "false")
         // ANR watchdog flag (for testing purposes only as this watchdog may drain the resources!)
         buildConfigField("Boolean", "ANR_WATCHDOG", "false")
         // If set to true, the server URL will be requested in UI in non-MDM mode even if it is hardcoded in build.gradle
-        // See the related "if" statement in MainActivity.java
         buildConfigField("Boolean", "REQUEST_SERVER_URL", "true")
-        // Set to true to debug admin receiver via remote logging
-        buildConfigField("Boolean", "DEVICE_ADMIN_DEBUG", "true")
         // Foreground service for MQTT: prevents OS from killing MQTT service on weak devices
         buildConfigField("Boolean", "MQTT_SERVICE_FOREGROUND", "true")
         // Set Base MDM to default launcher at early time of the first start
-        // to prevent the user from clicking Home and stop initializing Base MDM
         buildConfigField("Boolean", "SET_DEFAULT_LAUNCHER_EARLY", "true")
         // Adjust application selection on TV boxes
         buildConfigField("Boolean", "SELECTED_ITEM_BY_CLICK", "false")
         // Adjust application selection on TV boxes
         buildConfigField("Boolean", "DISABLE_ORIENTATION_LOCK", "false")
         // API key for the authorization of privileged library requests
-        buildConfigField("String", "LIBRARY_API_KEY", "\"068bd957181f91076e962a61c8788487\"")
+        buildConfigField("String", "LIBRARY_API_KEY", "\"${localProps['library.api.key'] ?: ''}\"")
         // Use accessibility services to control unwanted apps
-        // (this option is banned by Play Protect in some countries!)
         buildConfigField("Boolean", "USE_ACCESSIBILITY", "false")
-
     }
 
     signingConfigs {
         config {
             storeFile file('C:\\Git\\android_keystores\\base\\base.jks')
-            keyAlias = 'base'
-            keyPassword 'Base12345678@'
-            storePassword 'Base12345678@'
+            keyAlias = localProps['keystore.alias'] ?: 'base'
+            keyPassword localProps['keystore.password']
+            storePassword localProps['keystore.password']
         }
         debug {
             storeFile file('C:\\Git\\android_keystores\\base\\base.jks')
-            keyAlias = 'base'
-            keyPassword 'Base12345678@'
-            storePassword 'Base12345678@'
+            keyAlias = localProps['keystore.alias'] ?: 'base'
+            keyPassword localProps['keystore.password']
+            storePassword localProps['keystore.password']
         }
     }
     buildTypes {
@@ -108,18 +103,23 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             debuggable false
             signingConfig signingConfigs.config
+            buildConfigField("Boolean", "DEVICE_ADMIN_DEBUG", "false")
         }
         debug {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             signingConfig signingConfigs.debug
-
+            buildConfigField("Boolean", "DEVICE_ADMIN_DEBUG", "true")
         }
     }
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_11
         targetCompatibility JavaVersion.VERSION_11
+    }
+
+    kotlinOptions {
+        jvmTarget = '11'
     }
 
     packagingOptions {
@@ -163,10 +163,10 @@ dependencies {
     })
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test:runner:1.5.2'
-    implementation 'androidx.appcompat:appcompat:1.1.0'
-    testImplementation 'junit:junit:4.12'
-    implementation 'androidx.recyclerview:recyclerview:1.1.0'
-    implementation 'com.google.android.material:material:1.1.0'
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    testImplementation 'junit:junit:4.13.2'
+    implementation 'androidx.recyclerview:recyclerview:1.3.2'
+    implementation 'com.google.android.material:material:1.12.0'
     implementation 'androidx.localbroadcastmanager:localbroadcastmanager:1.0.0'
     // Core AndroidX test libraries
     androidTestImplementation 'androidx.test:rules:1.5.0'
@@ -180,29 +180,34 @@ dependencies {
     // MQTT messaging
     implementation 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.0'
 
-    // Picassomk
-    implementation 'com.squareup.picasso:picasso:2.5.2'
+    // Picasso
+    implementation 'com.squareup.picasso:picasso:2.8.0'
     implementation 'com.jakewharton.picasso:picasso2-okhttp3-downloader:1.1.0'
 
     // Retrofit
-    implementation 'com.squareup.retrofit2:retrofit:2.3.0'
-    implementation 'com.squareup.retrofit2:converter-jackson:2.3.0'
+    implementation 'com.squareup.retrofit2:retrofit:2.11.0'
+    implementation 'com.squareup.retrofit2:converter-jackson:2.11.0'
 
     // Jackson
-    implementation 'com.fasterxml.jackson.core:jackson-core:2.9.4'
-    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.9.4'
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.9.4'
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.18.3'
+    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.18.3'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.18.3'
 
     // Worker
-    implementation 'androidx.work:work-runtime:2.9.1'
+    implementation 'androidx.work:work-runtime:2.10.0'
 
     implementation('com.journeyapps:zxing-android-embedded:4.1.0') { transitive = false }
     implementation 'com.google.zxing:core:3.3.0'
-    implementation group: 'commons-io', name: 'commons-io', version: '2.0.1'
+    implementation group: 'commons-io', name: 'commons-io', version: '2.17.0'
 
     // JAX-B dependencies for JDK 9+
     implementation "jakarta.xml.bind:jakarta.xml.bind-api:2.3.2"
     implementation "org.glassfish.jaxb:jaxb-runtime:2.3.2"
+
+    // Kotlin
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib:2.0.21'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0'
 
     implementation(files("libs/ComponentLib_1.2.5_release.aar"))
     implementation(files("libs/TerminalManagerLib_1.1.0_release.aar"))
