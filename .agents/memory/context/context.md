@@ -9,7 +9,7 @@
 ## Active Fix Plan
 File: `.agents/planning/2026-06-14-kotlin-migration-android-fix-plan.md`
 Phase order: 0 (secrets) → 1 (add Kotlin) → 2 (deps) → 3 (json/) → 4 (util/) → 5 (task/) → 6 (quality) → 7 (MainActivity decompose)
-Current status: Phases 0, 1, 2 COMPLETE. Next: Phase 3 (migrate json/ to Kotlin data classes)
+Current status: Phases 0, 1, 2, 3 COMPLETE. Next: Phase 4 (migrate util/ to Kotlin)
 
 ## Key Findings (from review 2026-06-14)
 - B1 OPEN: MQTT password, keystore password, request signature hardcoded in build.gradle
