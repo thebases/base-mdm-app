@@ -85,13 +85,13 @@ android {
 
     signingConfigs {
         config {
-            storeFile file('C:\\Git\\android_keystores\\base\\base.jks')
+            storeFile file(localProps['keystore.path'] ?: 'C:\\Git\\android_keystores\\base\\base.jks')
             keyAlias = localProps['keystore.alias'] ?: 'base'
             keyPassword localProps['keystore.password']
             storePassword localProps['keystore.password']
         }
         debug {
-            storeFile file('C:\\Git\\android_keystores\\base\\base.jks')
+            storeFile file(localProps['keystore.path'] ?: 'C:\\Git\\android_keystores\\base\\base.jks')
             keyAlias = localProps['keystore.alias'] ?: 'base'
             keyPassword localProps['keystore.password']
             storePassword localProps['keystore.password']
@@ -181,7 +181,7 @@ dependencies {
     implementation 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.0'
 
     // Picasso
-    implementation 'com.squareup.picasso:picasso:2.8.0'
+    implementation 'com.squareup.picasso:picasso:2.71828'
     implementation 'com.jakewharton.picasso:picasso2-okhttp3-downloader:1.1.0'
 
     // Retrofit
@@ -195,7 +195,7 @@ dependencies {
     implementation 'com.fasterxml.jackson.module:jackson-module-kotlin:2.18.3'
 
     // Worker
-    implementation 'androidx.work:work-runtime:2.10.0'
+    implementation 'androidx.work:work-runtime:2.9.1'
 
     implementation('com.journeyapps:zxing-android-embedded:4.1.0') { transitive = false }
     implementation 'com.google.zxing:core:3.3.0'

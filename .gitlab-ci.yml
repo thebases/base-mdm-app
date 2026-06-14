@@ -1,0 +1,65 @@
+stages:
+  - build
+  - deploy
+
+variables:
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=false"
+
+# Cache Gradle dependencies between jobs
+.gradle_cache: &gradle_cache
+  cache:
+    key: "$CI_COMMIT_REF_SLUG-gradle"
+    paths:
+      - .gradle/
+      - ~/.gradle/caches/
+      - ~/.gradle/wrapper/
+
+build:release:
+  stage: build
+  image: cimg/android:2024.01.1
+  <<: *gradle_cache
+  before_script:
+    # Decode keystore file from CI variable (base64-encoded)
+    - echo "$KEYSTORE_BASE64" | base64 -d > /tmp/base.jks
+    # Write local.properties with all secrets from CI variables
+    - |
+      cat > local.properties <<EOF
+      sdk.dir=${ANDROID_HOME}
+      keystore.path=/tmp/base.jks
+      keystore.alias=${KEYSTORE_ALIAS}
+      keystore.password=${KEYSTORE_PASSWORD}
+      mqtt.domain=${MQTT_DOMAIN}
+      mqtt.username=${MQTT_USERNAME}
+      mqtt.password=${MQTT_PASSWORD}
+      request.signature=${REQUEST_SIGNATURE}
+      library.api.key=${LIBRARY_API_KEY}
+      EOF
+    - chmod +x ./gradlew
+  script:
+    - ./gradlew assembleBaseRelease
+  artifacts:
+    name: "base-mdm-${CI_COMMIT_SHORT_SHA}"
+    paths:
+      - app/build/outputs/apk/base/release/*.apk
+    expire_in: 14 days
+  only:
+    - master
+    - main
+    - /^release\/.*/
+
+deploy:static:
+  stage: deploy
+  tags:
+    - base_42
+  dependencies:
+    - build:release
+  script:
+    - APK=$(ls app/build/outputs/apk/base/release/*.apk | head -1)
+    - echo "Deploying $APK to /opt/services/static/"
+    - cp "$APK" /opt/services/static/
+    - echo "Deploy complete."
+  environment:
+    name: production
+  only:
+    - master
+    - main

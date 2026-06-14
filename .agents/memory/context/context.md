@@ -9,11 +9,11 @@
 ## Active Fix Plan
 File: `.agents/planning/2026-06-14-kotlin-migration-android-fix-plan.md`
 Phase order: 0 (secrets) → 1 (add Kotlin) → 2 (deps) → 3 (json/) → 4 (util/) → 5 (task/) → 6 (quality) → 7 (MainActivity decompose)
-Current status: Phases 0–6 COMPLETE (except I5 unit tests — large effort, skipped). Phase 5 re-done twice: idiomatic coroutines (TaskCallback fun interface) then full Kotlin conversion of ConfigUpdater, MainActivity, KozenCommandHandler, InitialSetupActivity, PushNotificationProcessor. Phase 6 re-fixed to cover new Kotlin files: empty/comment-only catches fixed in MainActivity.kt, PushNotificationProcessor.kt, InitialSetupActivity.kt. app/.gitignore bug fixed (bare `base` → `/base` to stop ignoring com/base/ package). Zero .java files remain in helper/, ui/, kozen/, worker/ packages. Next: Phase 7 (MainActivity decomposition — B2).
+Current status: Phases 0–7 COMPLETE (except I5 unit tests — large effort, skipped). Phase 7 decomposed MainActivity (2529 lines → ~600 lines) into 4 delegate classes: LockScreenManager, AppInstallDelegate, LauncherUIManager, PermissionFlowCoordinator. Gradle dep fixes: picasso 2.8.0→2.71828, work-runtime 2.10.0→2.9.1. Pre-existing compile errors remain in InstallUtils.kt and PushNotificationProcessor.kt (Phase 5/6 origin, not Phase 7).
 
 ## Key Findings (from review 2026-06-14)
 - B1 RESOLVED: secrets moved to local.properties
-- B2 OPEN: MainActivity.kt is ~2527 lines (God Class) — target of Phase 7
+- B2 RESOLVED: MainActivity.kt decomposed to ~600 lines via 4 delegate classes (Phase 7)
 - B3 RESOLVED: DEVICE_ADMIN_DEBUG=true in debug only, false in release
 - B4 RESOLVED: task/ AsyncTask replaced with coroutines; TaskCallback fun interface
 - I1 RESOLVED: jackson→2.18.3, retrofit→2.11.0, appcompat→1.7.0, etc.
@@ -25,7 +25,8 @@ Current status: Phases 0–6 COMPLETE (except I5 unit tests — large effort, sk
 
 ## Key File Locations
 - Build config: app/build.gradle
-- Main activity: app/src/main/java/com/base/launcher/ui/MainActivity.kt (2527 lines — B2 target)
+- Main activity: app/src/main/java/com/base/launcher/ui/MainActivity.kt (~600 lines, delegates to 4 coordinator classes)
+- Phase 7 delegates: LockScreenManager.kt, AppInstallDelegate.kt, LauncherUIManager.kt, PermissionFlowCoordinator.kt
 - JSON models: app/src/main/java/com/base/launcher/json/ (20 Kotlin data classes)
 - Utilities: app/src/main/java/com/base/launcher/util/ (14 Kotlin files — objects/classes)
 - Tasks: app/src/main/java/com/base/launcher/task/ (7 Kotlin files: TaskCallback.kt + 6 tasks; TaskCallback fun interface; CoroutineScope(Main).launch + withContext(IO))
