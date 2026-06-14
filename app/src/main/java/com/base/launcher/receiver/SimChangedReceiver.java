@@ -36,6 +36,7 @@ public class SimChangedReceiver extends BroadcastReceiver {
         try {
             phoneNumber = DeviceInfoProvider.getPhoneNumber(context);
         } catch (Exception e) {
+            RemoteLogger.log(context, Const.LOG_WARN, "Failed to get phone number: " + e.getMessage());
         }
 
         String simState = intent.getExtras().getString("ss");

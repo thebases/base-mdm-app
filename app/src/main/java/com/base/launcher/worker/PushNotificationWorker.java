@@ -117,12 +117,14 @@ public class PushNotificationWorker extends Worker {
         try {
             encodedDeviceId = URLEncoder.encode(encodedDeviceId, "utf8");
         } catch (UnsupportedEncodingException e) {
+            RemoteLogger.log(context, Const.LOG_WARN, "Failed to encode device ID: " + e.getMessage());
         }
         String path = settingsHelper.getServerProject() + "/rest/notifications/device/" + encodedDeviceId;
         String signature = null;
         try {
             signature = CryptoHelper.getSHA1String(BuildConfig.REQUEST_SIGNATURE + path);
         } catch (Exception e) {
+            RemoteLogger.log(context, Const.LOG_WARN, "Failed to compute request signature: " + e.getMessage());
         }
 
         RemoteLogger.log(context, Const.LOG_DEBUG, "Querying push notifications");

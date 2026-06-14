@@ -21,10 +21,9 @@ import android.graphics.Point;
 import android.graphics.drawable.GradientDrawable;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
+import android.net.Network;
 import android.net.Uri;
 import android.net.wifi.WifiManager;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
@@ -111,6 +110,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import okhttp3.Cache;
 import okhttp3.OkHttpClient;
@@ -161,6 +162,7 @@ public class MainActivity
     private DialogPermissionsBinding dialogPermissionsBinding;
 
     private Handler handler = new Handler();
+    private final ExecutorService backgroundExecutor = Executors.newSingleThreadExecutor();
     private View applicationNotAllowed;
     private View lockScreen;
 
@@ -171,7 +173,6 @@ public class MainActivity
     private int spanCount;
     private StatusBarUpdater statusBarUpdater = new StatusBarUpdater();
 
-    private static boolean configInitialized = false;
     private static final int BOOT_DURATION_SEC = 120;
     private static final int PAUSE_BETWEEN_AUTORUNS_SEC = 5;
     private boolean sendDeviceInfoScheduled = false;
@@ -192,7 +193,7 @@ public class MainActivity
 
     private ANRWatchDog anrWatchDog;
 
-    private int lastNetworkType;
+    private ConnectivityManager.NetworkCallback networkCallback;
 
     private ConfigUpdater configUpdater = new ConfigUpdater();
 
@@ -268,26 +269,10 @@ public class MainActivity
     private final BroadcastReceiver stateChangeReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            // Log new connection type
-            if (intent.getAction().equals(ConnectivityManager.CONNECTIVITY_ACTION)) {
-                ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-                NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
-                if (null != activeNetwork) {
-                    if (lastNetworkType != activeNetwork.getType()) {
-                        lastNetworkType = activeNetwork.getType();
-                        RemoteLogger.log(MainActivity.this, Const.LOG_DEBUG, "Network type changed: " + activeNetwork.getTypeName());
-                    }
-                } else {
-                    if (lastNetworkType != -1) {
-                        lastNetworkType = -1;
-                        RemoteLogger.log(MainActivity.this, Const.LOG_DEBUG, "Network connection lost");
-                    }
-                }
-            }
-
             try {
                 applyEarlyPolicies(settingsHelper.getConfig());
             } catch (Exception e) {
+                RemoteLogger.log(MainActivity.this, Const.LOG_WARN, "Non-fatal in stateChangeReceiver: " + e.getMessage());
             }
         }
     };
@@ -376,11 +361,32 @@ public class MainActivity
             IntentFilter intentFilter = new IntentFilter();
             intentFilter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
             intentFilter.addAction(WifiManager.SUPPLICANT_CONNECTION_CHANGE_ACTION);
-            intentFilter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 registerReceiver(stateChangeReceiver, intentFilter, Context.RECEIVER_EXPORTED);
             } else {
                 registerReceiver(stateChangeReceiver, intentFilter);
+            }
+
+            ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+            networkCallback = new ConnectivityManager.NetworkCallback() {
+                @Override
+                public void onAvailable(Network network) {
+                    RemoteLogger.log(MainActivity.this, Const.LOG_DEBUG, "Network connection available");
+                    runOnUiThread(() -> {
+                        try {
+                            applyEarlyPolicies(settingsHelper.getConfig());
+                        } catch (Exception e) {
+                            RemoteLogger.log(MainActivity.this, Const.LOG_WARN, "Non-fatal in networkCallback: " + e.getMessage());
+                        }
+                    });
+                }
+                @Override
+                public void onLost(Network network) {
+                    RemoteLogger.log(MainActivity.this, Const.LOG_DEBUG, "Network connection lost");
+                }
+            };
+            if (cm != null) {
+                cm.registerDefaultNetworkCallback(networkCallback);
             }
 
             intentFilter = new IntentFilter();
@@ -398,14 +404,6 @@ public class MainActivity
             settingsHelper.setMainActivityRunning(true);
         });
 
-        // Start iBeacon advertising once device is ready
-        Log.d(TAG, "======>>> Start iBeacon advertising");
-        // start advertising
-//        IBeaconAdvertiser.start(this);
-//
-//        // show full frame hex
-//        String hex = IBeaconAdvertiser.getFullFrameHex();
-//        Log.d(TAG,"FULL iBeacon Frame:\n" + hex);
         startBeaconWithPermissionCheck();
     }
 
@@ -531,42 +529,36 @@ public class MainActivity
             return;
         }
 
-        new AsyncTask<Void, Void, Void>() {
-            @Override
-            protected Void doInBackground(Void... voids) {
-                boolean appStarted = false;
-                for (Application application : config.getApplications()) {
-                    if (application.isRunAtBoot()) {
-                        // Delay start of each application to 5 sec
-                        try {
-                            Thread.sleep(PAUSE_BETWEEN_AUTORUNS_SEC * 1000);
-                        } catch (InterruptedException e) {
-                        }
-                        Intent launchIntent = getPackageManager().getLaunchIntentForPackage(application.getPkg());
-                        if (launchIntent != null) {
-                            startActivity(launchIntent);
-                            appStarted = true;
-                        }
-                    }
-                }
-                // Hide apps after start to avoid users confusion
-                if (appStarted && !config.isAutostartForeground()) {
+        backgroundExecutor.execute(() -> {
+            boolean appStarted = false;
+            for (Application application : config.getApplications()) {
+                if (application.isRunAtBoot()) {
                     try {
                         Thread.sleep(PAUSE_BETWEEN_AUTORUNS_SEC * 1000);
                     } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        return;
                     }
-                    // Notice: if MainActivity will be destroyed after running multiple apps at startup,
-                    // we can get the looping here, because startActivity will create a new instance!
-                    // That's why we put a boolean extra preventing apps from start
-                    Intent intent = new Intent(MainActivity.this, MainActivity.class);
-                    intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                    intent.putExtra(Const.RESTORED_ACTIVITY, true);
-                    startActivity(intent);
+                    Intent launchIntent = getPackageManager().getLaunchIntentForPackage(application.getPkg());
+                    if (launchIntent != null) {
+                        startActivity(launchIntent);
+                        appStarted = true;
+                    }
                 }
-
-                return null;
             }
-        }.execute();
+            if (appStarted && !config.isAutostartForeground()) {
+                try {
+                    Thread.sleep(PAUSE_BETWEEN_AUTORUNS_SEC * 1000);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+                Intent intent = new Intent(MainActivity.this, MainActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                intent.putExtra(Const.RESTORED_ACTIVITY, true);
+                startActivity(intent);
+            }
+        });
 
     }
 
@@ -578,20 +570,12 @@ public class MainActivity
             return;
         }
 
-        new AsyncTask<Void, Void, Void>() {
-            @Override
-            protected Void doInBackground(Void... voids) {
-                if (!SystemUtils.becomeDeviceOwnerByCommand(MainActivity.this)) {
-                    SystemUtils.becomeDeviceOwnerByXmlFile(MainActivity.this);
-                };
-                return null;
+        backgroundExecutor.execute(() -> {
+            if (!SystemUtils.becomeDeviceOwnerByCommand(MainActivity.this)) {
+                SystemUtils.becomeDeviceOwnerByXmlFile(MainActivity.this);
             }
-
-            @Override
-            protected void onPostExecute(Void v) {
-                setDefaultLauncherEarly();
-            }
-        }.execute();
+            handler.post(this::setDefaultLauncherEarly);
+        });
     }
 
     private void startServices() {
@@ -707,20 +691,12 @@ public class MainActivity
             String defaultLauncher = Utils.getDefaultLauncher(this);
 
             // As per the documentation, setting the default preferred activity should not be done on the main thread
-            new AsyncTask<Void, Void, Void>() {
-                @Override
-                protected Void doInBackground(Void... voids) {
-                    if (!getPackageName().equalsIgnoreCase(defaultLauncher)) {
-                        Utils.setDefaultLauncher(MainActivity.this);
-                    }
-                    return null;
+            backgroundExecutor.execute(() -> {
+                if (!getPackageName().equalsIgnoreCase(defaultLauncher)) {
+                    Utils.setDefaultLauncher(MainActivity.this);
                 }
-
-                @Override
-                protected void onPostExecute(Void v) {
-                    checkAndStartLauncher();
-                }
-            }.execute();
+                handler.post(this::checkAndStartLauncher);
+            });
             return;
         }
         checkAndStartLauncher();
@@ -965,7 +941,7 @@ public class MainActivity
                 // We shouldn't get looping here because autoSetDeviceId cannot return true if deviceId.length == 0
                 startLauncher();
             }
-        } else if (!configInitialized) {
+        } else if (!settingsHelper.isConfigInitialized()) {
             Log.i(Const.LOG_TAG, "Updating configuration in startLauncher()");
             boolean userInteraction = true;
             boolean integratedProvisioningFlow = settingsHelper.isIntegratedProvisioningFlow();
@@ -1408,7 +1384,7 @@ public class MainActivity
     @Override
     public void onAppUpdateStart() {
         binding.setMessage( getString( R.string.main_activity_applications_update ) );
-        configInitialized = true;
+        settingsHelper.setConfigInitialized(true);
     }
 
     @Override
@@ -1894,6 +1870,13 @@ public class MainActivity
             catch ( Exception e ) { e.printStackTrace(); }
         }
 
+        if (networkCallback != null) {
+            ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+            if (cm != null) {
+                cm.unregisterNetworkCallback(networkCallback);
+            }
+        }
+
         try {
             LocalBroadcastManager.getInstance(this).unregisterReceiver(receiver);
             unregisterReceiver(stateChangeReceiver);
@@ -2365,7 +2348,7 @@ public class MainActivity
         dialogEnterPasswordBinding.setLoading( true );
         GetServerConfigTask task = new GetServerConfigTask( this ) {
             @Override
-            protected void onPostExecute( Integer result ) {
+            public void onComplete(int result) {
                 dialogEnterPasswordBinding.setLoading( false );
 
                 String masterPassword = CryptoHelper.getMD5String( "12345678" );

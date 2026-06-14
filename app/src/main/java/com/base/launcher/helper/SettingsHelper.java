@@ -73,6 +73,7 @@ public class SettingsHelper {
     private ServerConfig oldConfig;
     private Map<String,ApplicationSetting> appSettings = new HashMap<>();
     private Set<String> allowedClasses = new HashSet<>();
+    private boolean configInitialized = false;
 
     private static SettingsHelper instance;
 
@@ -175,6 +176,9 @@ public class SettingsHelper {
         }
         return sharedPreferences.edit().putString(PACKAGE_NAME + PREF_KEY_IP_ADDRESS, externalIp ).commit();
     }
+
+    public boolean isConfigInitialized() { return configInitialized; }
+    public void setConfigInitialized(boolean value) { configInitialized = value; }
 
     public boolean isMainActivityRunning() {
         return sharedPreferences.getBoolean(PACKAGE_NAME + PREF_KEY_ACTIVITY_RUNNING, false );

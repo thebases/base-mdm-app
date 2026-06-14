@@ -100,6 +100,7 @@ public class StatusControlService extends Service {
             try {
                 disableControlTimer.cancel();
             } catch (Exception e) {
+                Log.w(Const.LOG_TAG, "Timer cancel failed: " + e.getMessage());
             }
             disableControlTimer = null;
         }

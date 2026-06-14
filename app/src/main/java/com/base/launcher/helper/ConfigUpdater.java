@@ -10,7 +10,6 @@ import android.content.pm.PackageInstaller;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
@@ -57,6 +56,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class ConfigUpdater {
 
@@ -86,6 +87,7 @@ public class ConfigUpdater {
     private UINotifier uiNotifier;
     private SettingsHelper settingsHelper;
     private Handler handler = new Handler(Looper.getMainLooper());
+    private final ExecutorService backgroundExecutor = Executors.newSingleThreadExecutor();
     private List<RemoteFile> filesForInstall = new LinkedList();
     private List< Application > applicationsForInstall = new LinkedList();
     private List< Application > applicationsForRun = new LinkedList();
@@ -149,8 +151,7 @@ public class ConfigUpdater {
         }
         new GetServerConfigTask( context ) {
             @Override
-            protected void onPostExecute( Integer result ) {
-                super.onPostExecute( result );
+            public void onComplete( int result ) {
                 configInitializing = false;
                 Log.i(Const.LOG_TAG, "updateConfig(): set configInitializing=false after getting config");
 
@@ -207,8 +208,7 @@ public class ConfigUpdater {
 
         GetRemoteLogConfigTask task = new GetRemoteLogConfigTask(context) {
             @Override
-            protected void onPostExecute( Integer result ) {
-                super.onPostExecute( result );
+            public void onComplete( int result ) {
                 Log.i(Const.LOG_TAG, "updateRemoteLogConfig(): result=" + result);
                 boolean deviceOwner = Utils.isDeviceOwner(context);
                 RemoteLogger.log(context, Const.LOG_INFO, "Device owner: " + deviceOwner);
@@ -330,9 +330,9 @@ public class ConfigUpdater {
             RemoteLogger.log(context, Const.LOG_INFO, "Device reset by server request");
             ConfirmDeviceResetTask confirmTask = new ConfirmDeviceResetTask(context) {
                 @Override
-                protected void onPostExecute( Integer result ) {
+                public void onComplete(int result) {
                     // Do a factory reset if we can
-                    if (result == null || result != Const.TASK_SUCCESS ) {
+                    if (result != Const.TASK_SUCCESS ) {
                         RemoteLogger.log(context, Const.LOG_WARN, "Failed to confirm device reset on server");
                     } else if (Utils.checkAdminMode(context)) {
                         // no_factory_reset restriction doesn't prevent against admin's reset action
@@ -364,8 +364,8 @@ public class ConfigUpdater {
             RemoteLogger.log(context, Const.LOG_INFO, "Rebooting by server request");
             ConfirmRebootTask confirmTask = new ConfirmRebootTask(context) {
                 @Override
-                protected void onPostExecute( Integer result ) {
-                    if (result == null || result != Const.TASK_SUCCESS ) {
+                public void onComplete(int result) {
+                    if (result != Const.TASK_SUCCESS ) {
                         RemoteLogger.log(context, Const.LOG_WARN, "Failed to confirm reboot on server");
                     } else if (Utils.checkAdminMode(context)) {
                         if (!Utils.reboot(context)) {
@@ -398,7 +398,7 @@ public class ConfigUpdater {
 
             ConfirmPasswordResetTask confirmTask = new ConfirmPasswordResetTask(context) {
                 @Override
-                protected void onPostExecute( Integer result ) {
+                public void onComplete(int result) {
                     setDefaultLauncher();
                 }
             };
@@ -420,22 +420,14 @@ public class ConfigUpdater {
             String defaultLauncher = Utils.getDefaultLauncher(context);
 
             // As per the documentation, setting the default preferred activity should not be done on the main thread
-            new AsyncTask<Void, Void, Void>() {
-                @Override
-                protected Void doInBackground(Void... voids) {
-                    if (needSetLauncher && !context.getPackageName().equalsIgnoreCase(defaultLauncher)) {
-                        Utils.setDefaultLauncher(context);
-                    } else if (!needSetLauncher && context.getPackageName().equalsIgnoreCase(defaultLauncher)) {
-                        Utils.clearDefaultLauncher(context);
-                    }
-                    return null;
+            backgroundExecutor.execute(() -> {
+                if (needSetLauncher && !context.getPackageName().equalsIgnoreCase(defaultLauncher)) {
+                    Utils.setDefaultLauncher(context);
+                } else if (!needSetLauncher && context.getPackageName().equalsIgnoreCase(defaultLauncher)) {
+                    Utils.clearDefaultLauncher(context);
                 }
-
-                @Override
-                protected void onPostExecute(Void v) {
-                    updatePolicies();
-                }
-            }.execute();
+                handler.post(this::updatePolicies);
+            });
             return;
         }
         updatePolicies();
@@ -467,20 +459,11 @@ public class ConfigUpdater {
     }
 
     private void checkAndUpdateFiles() {
-        new AsyncTask<Void, Void, Void>() {
-            @Override
-            protected Void doInBackground(Void... voids) {
-                ServerConfig config = settingsHelper.getConfig();
-                // This may be a long procedure due to checksum calculation so execute it in the background thread
-                InstallUtils.generateFilesForInstallList(context, config.getFiles(), filesForInstall);
-                return null;
-            }
-
-            @Override
-            protected void onPostExecute(Void v) {
-                loadAndInstallFiles();
-            }
-        }.execute();
+        backgroundExecutor.execute(() -> {
+            ServerConfig config = settingsHelper.getConfig();
+            InstallUtils.generateFilesForInstallList(context, config.getFiles(), filesForInstall);
+            handler.post(this::loadAndInstallFiles);
+        });
     }
 
     public static class RemoteFileStatus {
@@ -497,158 +480,119 @@ public class ConfigUpdater {
         if (filesForInstall.size() > 0 && isGoodNetworkForUpdate) {
             RemoteFile remoteFile = filesForInstall.remove(0);
 
-            new AsyncTask<RemoteFile, Void, RemoteFileStatus>() {
+            backgroundExecutor.execute(() -> {
+                RemoteFileStatus fileStatus = null;
 
-                @Override
-                protected RemoteFileStatus doInBackground(RemoteFile... remoteFiles) {
-                    final RemoteFile remoteFile = remoteFiles[0];
-                    RemoteFileStatus remoteFileStatus = null;
+                if (remoteFile.isRemove()) {
+                    RemoteLogger.log(context, Const.LOG_DEBUG, "Removing file: " + remoteFile.getPath());
+                    File file = InstallUtils.getFileByPath(remoteFile.getPath());
+                    try {
+                        if (file.exists()) {
+                            file.delete();
+                        }
+                        RemoteFileTable.deleteByPath(DatabaseHelper.instance(context).getWritableDatabase(), remoteFile.getPath());
+                    } catch (Exception e) {
+                        RemoteLogger.log(context, Const.LOG_WARN, "Failed to remove file: " +
+                                remoteFile.getPath() + ": " + e.getMessage());
+                        e.printStackTrace();
+                    }
 
-                    if (remoteFile.isRemove()) {
-                        RemoteLogger.log(context, Const.LOG_DEBUG, "Removing file: " + remoteFile.getPath());
-                        File file = InstallUtils.getFileByPath(remoteFile.getPath());
+                } else if (remoteFile.getUrl() != null) {
+                    if (uiNotifier != null) {
+                        handler.post(() -> uiNotifier.onFileDownloading(remoteFile));
+                    }
+
+                    fileStatus = new RemoteFileStatus();
+                    fileStatus.remoteFile = remoteFile;
+
+                    DatabaseHelper dbHelper = DatabaseHelper.instance(context);
+                    Download lastDownload = DownloadTable.selectByPath(dbHelper.getReadableDatabase(), remoteFile.getPath());
+                    if (!canDownload(lastDownload, remoteFile.getPath())) {
+                        final RemoteFileStatus finalFileStatus = fileStatus;
+                        handler.post(() -> handleFileStatus(finalFileStatus));
+                        return;
+                    }
+
+                    File file = null;
+                    try {
+                        RemoteLogger.log(context, Const.LOG_DEBUG, "Downloading file: " + remoteFile.getPath());
+                        file = InstallUtils.downloadFile(context, remoteFile.getUrl(),
+                                (progress, total, current) -> {
+                                    if (uiNotifier != null) {
+                                        uiNotifier.onDownloadProgress(progress, total, current);
+                                    }
+                                });
+                    } catch (Exception e) {
+                        RemoteLogger.log(context, Const.LOG_WARN,
+                                "Failed to download file " + remoteFile.getPath() + ": " + e.getMessage());
+                        e.printStackTrace();
+                        saveFailedAttempt(context, lastDownload, remoteFile.getUrl(), remoteFile.getPath(), false, false);
+                    }
+
+                    if (file != null) {
+                        fileStatus.downloaded = true;
+                        File finalFile = InstallUtils.getFileByPath(remoteFile.getPath());
                         try {
-                            if (file.exists()) {
-                                file.delete();
+                            if (finalFile.exists()) {
+                                finalFile.delete();
                             }
-                            RemoteFileTable.deleteByPath(DatabaseHelper.instance(context).getWritableDatabase(), remoteFile.getPath());
-                        } catch (Exception e) {
-                            RemoteLogger.log(context, Const.LOG_WARN, "Failed to remove file: " +
-                                    remoteFile.getPath() + ": " + e.getMessage());
-                            e.printStackTrace();
-                        }
-
-                    } else if (remoteFile.getUrl() != null) {
-                        if (uiNotifier != null) {
-                            uiNotifier.onFileDownloading(remoteFile);
-                        }
-                        // onFileDownloading() method contents
-                        // updateMessageForFileDownloading(remoteFile.getPath());
-
-                        remoteFileStatus = new RemoteFileStatus();
-                        remoteFileStatus.remoteFile = remoteFile;
-
-                        DatabaseHelper dbHelper = DatabaseHelper.instance(context);
-                        Download lastDownload = DownloadTable.selectByPath(dbHelper.getReadableDatabase(), remoteFile.getPath());
-                        if (!canDownload(lastDownload, remoteFile.getPath())) {
-                            // Do not make further attempts to download if there were earlier download or installation errors
-                            return remoteFileStatus;
-                        }
-
-                        File file = null;
-                        try {
-                            RemoteLogger.log(context, Const.LOG_DEBUG, "Downloading file: " + remoteFile.getPath());
-                            file = InstallUtils.downloadFile(context, remoteFile.getUrl(),
-                                    new InstallUtils.DownloadProgress() {
-                                        @Override
-                                        public void onDownloadProgress(final int progress, final long total, final long current) {
-                                            if (uiNotifier != null) {
-                                                uiNotifier.onDownloadProgress(progress, total, current);
-                                            }
-                                            // onDownloadProgress() method contents
-                                            /*handler.post(new Runnable() {
-                                                @Override
-                                                public void run() {
-                                                    binding.progress.setMax(100);
-                                                    binding.progress.setProgress(progress);
-
-                                                    binding.setFileLength(total);
-                                                    binding.setDownloadedLength(current);
-                                                }
-                                            });*/
-                                        }
-                                    });
+                            if (!remoteFile.isVarContent()) {
+                                FileUtils.moveFile(file, finalFile);
+                            } else {
+                                String imei = DeviceInfoProvider.getImei(context, 0);
+                                if (imei == null || imei.equals("")) {
+                                    imei = settingsHelper.getConfig().getImei();
+                                }
+                                createFileFromTemplate(file, finalFile, settingsHelper.getDeviceId(), imei, settingsHelper.getConfig());
+                            }
+                            RemoteFileTable.insert(dbHelper.getWritableDatabase(), remoteFile);
+                            fileStatus.installed = true;
+                            if (lastDownload != null) {
+                                DownloadTable.deleteByPath(dbHelper.getWritableDatabase(), lastDownload.getPath());
+                            }
                         } catch (Exception e) {
                             RemoteLogger.log(context, Const.LOG_WARN,
-                                    "Failed to download file " + remoteFile.getPath() + ": " + e.getMessage());
+                                    "Failed to create file " + remoteFile.getPath() + ": " + e.getMessage());
                             e.printStackTrace();
-                            // Save the download attempt in the database
-                            saveFailedAttempt(context, lastDownload, remoteFile.getUrl(), remoteFile.getPath(), false, false);
-                        }
-
-                        if (file != null) {
-                            remoteFileStatus.downloaded = true;
-                            File finalFile = InstallUtils.getFileByPath(remoteFile.getPath());
                             try {
-                                if (finalFile.exists()) {
-                                    finalFile.delete();
+                                if (file.exists()) {
+                                    file.delete();
                                 }
-                                if (!remoteFile.isVarContent()) {
-                                    FileUtils.moveFile(file, finalFile);
-                                } else {
-                                    String imei = DeviceInfoProvider.getImei(context, 0);
-                                    if (imei == null || imei.equals("")) {
-                                        imei = settingsHelper.getConfig().getImei();
-                                    }
-                                    createFileFromTemplate(file, finalFile, settingsHelper.getDeviceId(), imei, settingsHelper.getConfig());
-                                }
-                                RemoteFileTable.insert(dbHelper.getWritableDatabase(), remoteFile);
-                                remoteFileStatus.installed = true;
-                                if (lastDownload != null) {
-                                    DownloadTable.deleteByPath(dbHelper.getWritableDatabase(), lastDownload.getPath());
-                                }
-                            } catch (Exception e) {
-                                RemoteLogger.log(context, Const.LOG_WARN,
-                                        "Failed to create file " + remoteFile.getPath() + ": " + e.getMessage());
-                                e.printStackTrace();
-                                // Remove initial file because we don't want to install this file any more
-                                try {
-                                    if (file.exists()) {
-                                        file.delete();
-                                    }
-                                } catch (Exception e1) {
-                                    e1.printStackTrace();
-                                }
-                                remoteFileStatus.installed = false;
-                                // Save the install attempt in the database
-                                saveFailedAttempt(context, lastDownload, remoteFile.getUrl(), remoteFile.getPath(), true, false);
+                            } catch (Exception e1) {
+                                e1.printStackTrace();
                             }
-                        } else {
-                            remoteFileStatus.downloaded = false;
-                            remoteFileStatus.installed = false;
+                            fileStatus.installed = false;
+                            saveFailedAttempt(context, lastDownload, remoteFile.getUrl(), remoteFile.getPath(), true, false);
                         }
+                    } else {
+                        fileStatus.downloaded = false;
+                        fileStatus.installed = false;
                     }
-
-                    return remoteFileStatus;
                 }
 
-                @Override
-                protected void onPostExecute(RemoteFileStatus fileStatus) {
-                    if (fileStatus != null) {
-                        if (!fileStatus.installed) {
-                            filesForInstall.add( 0, fileStatus.remoteFile );
-                            if (uiNotifier != null) {
-                                if (!fileStatus.downloaded) {
-                                    uiNotifier.onFileDownloadError(fileStatus.remoteFile);
-                                } else {
-                                    uiNotifier.onFileInstallError(fileStatus.remoteFile);
-                                }
-                            }
-                            // onFileDownloadError() method contents
-                            /*
-                            if (!ProUtils.kioskModeRequired(context)) {
-                                // Notify the error dialog that we're downloading a file, not an app
-                                downloadingFile = true;
-                                createAndShowFileNotDownloadedDialog(fileStatus.remoteFile.getUrl());
-                                binding.setDownloading( false );
-                            } else {
-                                // Avoid user interaction in kiosk mode, just ignore download error and keep the old version
-                                // Note: view is not used in this method so just pass null there
-                                confirmDownloadFailureClicked(null);
-                            }
-                             */
-                            return;
-                        }
-                    }
-                    Log.i(Const.LOG_TAG, "loadAndInstallFiles(): proceed to next file");
-                    loadAndInstallFiles();
-                }
-
-            }.execute(remoteFile);
+                final RemoteFileStatus finalFileStatus = fileStatus;
+                handler.post(() -> handleFileStatus(finalFileStatus));
+            });
         } else {
             Log.i(Const.LOG_TAG, "loadAndInstallFiles(): Proceed to certificate installation");
             installCertificates();
         }
+    }
+
+    private void handleFileStatus(RemoteFileStatus fileStatus) {
+        if (fileStatus != null && !fileStatus.installed) {
+            filesForInstall.add(0, fileStatus.remoteFile);
+            if (uiNotifier != null) {
+                if (!fileStatus.downloaded) {
+                    uiNotifier.onFileDownloadError(fileStatus.remoteFile);
+                } else {
+                    uiNotifier.onFileInstallError(fileStatus.remoteFile);
+                }
+            }
+            return;
+        }
+        Log.i(Const.LOG_TAG, "loadAndInstallFiles(): proceed to next file");
+        loadAndInstallFiles();
     }
 
     // Save failed attempt to download or install a file or an app in the database to avoid infinite loops
@@ -701,18 +645,10 @@ public class ConfigUpdater {
     private void installCertificates() {
         final String certPaths = settingsHelper.getAppPreference(context.getPackageName(), "certificates");
         if (certPaths != null) {
-            new AsyncTask<Void, Void, Void>() {
-                @Override
-                protected Void doInBackground(Void... voids) {
-                    CertInstaller.installCertificatesFromFiles(context, certPaths.trim());
-                    return null;
-                }
-
-                @Override
-                protected void onPostExecute(Void v) {
-                    checkAndUpdateApplications();
-                }
-            }.execute();
+            backgroundExecutor.execute(() -> {
+                CertInstaller.installCertificatesFromFiles(context, certPaths.trim());
+                handler.post(this::checkAndUpdateApplications);
+            });
         } else {
             checkAndUpdateApplications();
         }
@@ -757,169 +693,117 @@ public class ConfigUpdater {
         if (applicationsForInstall.size() > 0 && isGoodTimeForAppUpdate && isGoodNetworkForUpdate) {
             Application application = applicationsForInstall.remove(0);
 
-            new AsyncTask<Application, Void, ApplicationStatus>() {
+            backgroundExecutor.execute(() -> {
+                ApplicationStatus applicationStatus = null;
 
-                @Override
-                protected ApplicationStatus doInBackground(Application... applications) {
-                    final Application application = applications[0];
-                    ApplicationStatus applicationStatus = null;
+                if (application.isRemove()) {
+                    RemoteLogger.log(context, Const.LOG_DEBUG, "Removing app: " + application.getPkg());
+                    if (uiNotifier != null) {
+                        handler.post(() -> uiNotifier.onAppRemoving(application));
+                    }
+                    uninstallApplication(application.getPkg());
 
-                    if (application.isRemove()) {
-                        // Remove the app
-                        RemoteLogger.log(context, Const.LOG_DEBUG, "Removing app: " + application.getPkg());
+                } else if (application.getUrl() == null) {
+                    handler.post(() -> {
+                        Log.i(Const.LOG_TAG, "loadAndInstallApplications(): proceed to next app");
+                        loadAndInstallApplications();
+                    });
+                    return;
+
+                } else if (application.getUrl().startsWith("market://details")) {
+                    RemoteLogger.log(context, Const.LOG_INFO, "Installing app " + application.getPkg() + " from Google Play");
+                    installApplicationFromPlayMarket(application.getUrl(), application.getPkg());
+                    applicationStatus = new ApplicationStatus();
+                    applicationStatus.application = application;
+                    applicationStatus.installed = true;
+
+                } else if (application.getUrl().startsWith("file:///")) {
+                    RemoteLogger.log(context, Const.LOG_INFO, "Installing app " + application.getPkg() + " from SD card");
+                    applicationStatus = new ApplicationStatus();
+                    applicationStatus.application = application;
+                    try {
+                        Log.d(Const.LOG_TAG, "URL: " + application.getUrl());
+                        File file = new File(new URL(application.getUrl()).toURI());
+                        Log.d(Const.LOG_TAG, "Path: " + file.getAbsolutePath());
                         if (uiNotifier != null) {
-                            uiNotifier.onAppRemoving(application);
+                            handler.post(() -> uiNotifier.onAppInstalling(application));
                         }
-                        // onAppRemoving() method contents
-                        //updateMessageForApplicationRemoving( application.getName() );
-                        uninstallApplication(application.getPkg());
-
-                    } else if (application.getUrl() == null) {
-                        handler.post( new Runnable() {
-                            @Override
-                            public void run() {
-                                Log.i(Const.LOG_TAG, "loadAndInstallApplications(): proceed to next app");
-                                loadAndInstallApplications();
-                            }
-                        } );
-
-                    } else if (application.getUrl().startsWith("market://details")) {
-                        RemoteLogger.log(context, Const.LOG_INFO, "Installing app " + application.getPkg() + " from Google Play");
-                        installApplicationFromPlayMarket(application.getUrl(), application.getPkg());
-                        applicationStatus = new ApplicationStatus();
-                        applicationStatus.application = application;
+                        installApplication(file, application.getPkg(), application.getVersion());
                         applicationStatus.installed = true;
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        applicationStatus.installed = false;
+                    }
 
-                    } else if (application.getUrl().startsWith("file:///")) {
-                        RemoteLogger.log(context, Const.LOG_INFO, "Installing app " + application.getPkg() + " from SD card");
-                        applicationStatus = new ApplicationStatus();
-                        applicationStatus.application = application;
-                        File file = null;
-                        try {
-                            Log.d(Const.LOG_TAG, "URL: " + application.getUrl());
-                            file = new File(new URL(application.getUrl()).toURI());
-                            if (file != null) {
-                                Log.d(Const.LOG_TAG, "Path: " + file.getAbsolutePath());
-                                if (uiNotifier != null) {
-                                    uiNotifier.onAppInstalling(application);
-                                }
-                                // onAppInstalling() method contents
-                                //updateMessageForApplicationInstalling(application.getName());
-                                installApplication(file, application.getPkg(), application.getVersion());
-                                applicationStatus.installed = true;
-                            } else {
-                                applicationStatus.installed = false;
-                            }
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            applicationStatus.installed = false;
-                        }
+                } else {
+                    if (uiNotifier != null) {
+                        handler.post(() -> uiNotifier.onAppDownloading(application));
+                    }
 
-                    } else {
+                    applicationStatus = new ApplicationStatus();
+                    applicationStatus.application = application;
+
+                    DatabaseHelper dbHelper = DatabaseHelper.instance(context);
+                    String tempPath = InstallUtils.getAppTempPath(context, application.getUrl());
+                    Download lastDownload = DownloadTable.selectByPath(dbHelper.getReadableDatabase(), tempPath);
+                    if (!canDownload(lastDownload, application.getPkg())) {
+                        applicationStatus.installed = false;
+                        final ApplicationStatus finalApplicationStatus = applicationStatus;
+                        handler.post(() -> handleApplicationStatus(finalApplicationStatus));
+                        return;
+                    }
+
+                    File file = null;
+                    try {
+                        RemoteLogger.log(context, Const.LOG_DEBUG, "Downloading app: " + application.getPkg());
+                        file = InstallUtils.downloadFile(context, application.getUrl(),
+                                (progress, total, current) -> {
+                                    if (uiNotifier != null) {
+                                        uiNotifier.onDownloadProgress(progress, total, current);
+                                    }
+                                });
+                    } catch (Exception e) {
+                        RemoteLogger.log(context, Const.LOG_WARN, "Failed to download app " + application.getPkg() + ": " + e.getMessage());
+                        e.printStackTrace();
+                        saveFailedAttempt(context, lastDownload, application.getUrl(), tempPath, false, false);
+                    }
+
+                    if (file != null) {
                         if (uiNotifier != null) {
-                            uiNotifier.onAppDownloading(application);
+                            handler.post(() -> uiNotifier.onAppInstalling(application));
                         }
-                        // onAppDownloading() method contents
-                        //updateMessageForApplicationDownloading(application.getName());
-
-                        applicationStatus = new ApplicationStatus();
-                        applicationStatus.application = application;
-
-                        DatabaseHelper dbHelper = DatabaseHelper.instance(context);
-                        String tempPath = InstallUtils.getAppTempPath(context, application.getUrl());
-                        Download lastDownload = DownloadTable.selectByPath(dbHelper.getReadableDatabase(), tempPath);
-                        if (!canDownload(lastDownload, application.getPkg())) {
-                            // Do not make further attempts to download if there were earlier download or installation errors
-                            applicationStatus.installed = false;
-                            return applicationStatus;
+                        installApplication(file, application.getPkg(), application.getVersion());
+                        applicationStatus.installed = true;
+                        if (lastDownload != null) {
+                            DownloadTable.deleteByPath(dbHelper.getWritableDatabase(), lastDownload.getPath());
                         }
-
-                        File file = null;
-                        try {
-                            RemoteLogger.log(context, Const.LOG_DEBUG, "Downloading app: " + application.getPkg());
-                            file = InstallUtils.downloadFile(context, application.getUrl(),
-                                    new InstallUtils.DownloadProgress() {
-                                        @Override
-                                        public void onDownloadProgress(final int progress, final long total, final long current) {
-                                            if (uiNotifier != null) {
-                                                uiNotifier.onDownloadProgress(progress, total, current);
-                                            }
-                                            /*
-                                            handler.post(new Runnable() {
-                                                @Override
-                                                public void run() {
-                                                    binding.progress.setMax(100);
-                                                    binding.progress.setProgress(progress);
-
-                                                    binding.setFileLength(total);
-                                                    binding.setDownloadedLength(current);
-                                                }
-                                            });
-                                             */
-                                        }
-                                    });
-                        } catch (Exception e) {
-                            RemoteLogger.log(context, Const.LOG_WARN, "Failed to download app " + application.getPkg() + ": " + e.getMessage());
-                            e.printStackTrace();
-                            // Save the download attempt in the database
-                            saveFailedAttempt(context, lastDownload, application.getUrl(), tempPath, false, false);
-                        }
-
-                        if (file != null) {
-                            if (uiNotifier != null) {
-                                uiNotifier.onAppInstalling(application);
-                            }
-                            // onAppInstalling() method contents
-                            //updateMessageForApplicationInstalling(application.getName());
-                            installApplication(file, application.getPkg(), application.getVersion());
-                            applicationStatus.installed = true;
-                            // Here we remove app from pending downloads
-                            // If it fails to install, we'll remember it and do not download any more
-                            if (lastDownload != null) {
-                                DownloadTable.deleteByPath(dbHelper.getWritableDatabase(), lastDownload.getPath());
-                            }
-                        } else {
-                            applicationStatus.installed = false;
-                        }
-                    }
-
-                    return applicationStatus;
-                }
-
-                @Override
-                protected void onPostExecute(ApplicationStatus applicationStatus) {
-                    if (applicationStatus != null) {
-                        if (applicationStatus.installed) {
-                            if (applicationStatus.application.isRunAfterInstall()) {
-                                applicationsForRun.add(applicationStatus.application);
-                            }
-                        } else {
-                            applicationsForInstall.add( 0, applicationStatus.application );
-                            if (uiNotifier != null) {
-                                uiNotifier.onAppDownloadError(applicationStatus.application);
-                            }
-                            // onAppDownloadError() method contents
-                            /*
-                            if (!ProUtils.kioskModeRequired(MainActivity.this)) {
-                                // Notify the error dialog that we're downloading an app
-                                downloadingFile = false;
-                                createAndShowFileNotDownloadedDialog(applicationStatus.application.getName());
-                                binding.setDownloading( false );
-                            } else {
-                                // Avoid user interaction in kiosk mode, just ignore download error and keep the old version
-                                // Note: view is not used in this method so just pass null there
-                                confirmDownloadFailureClicked(null);
-                            }
-                             */
-                        }
+                    } else {
+                        applicationStatus.installed = false;
                     }
                 }
 
-            }.execute(application);
+                final ApplicationStatus finalApplicationStatus = applicationStatus;
+                handler.post(() -> handleApplicationStatus(finalApplicationStatus));
+            });
         } else {
             // App install receiver is unregistered after all apps are installed or a timeout happens
             //unregisterAppInstallReceiver();
             lockRestrictions();
+        }
+    }
+
+    private void handleApplicationStatus(ApplicationStatus applicationStatus) {
+        if (applicationStatus != null) {
+            if (applicationStatus.installed) {
+                if (applicationStatus.application.isRunAfterInstall()) {
+                    applicationsForRun.add(applicationStatus.application);
+                }
+            } else {
+                applicationsForInstall.add(0, applicationStatus.application);
+                if (uiNotifier != null) {
+                    uiNotifier.onAppDownloadError(applicationStatus.application);
+                }
+            }
         }
     }
 
@@ -943,72 +827,50 @@ public class ConfigUpdater {
     private void setActions() {
         final ServerConfig config = settingsHelper.getConfig();
         // As per the documentation, setting the default preferred activity should not be done on the main thread
-        new AsyncTask<Void, Void, Void>() {
-            @Override
-            protected Void doInBackground(Void... voids) {
-                // If kiosk browser is installed, make it a default browser
-                // This is a temporary solution! Perhaps user wants only to open specific hosts / schemes
-                if (Utils.isDeviceOwner(context)) {
-                    if (config.getActions() != null && config.getActions().size() > 0) {
-                        for (Action action : config.getActions()) {
-                            Utils.setAction(context, action);
-                        }
-                    }
+        backgroundExecutor.execute(() -> {
+            if (Utils.isDeviceOwner(context) && config.getActions() != null && config.getActions().size() > 0) {
+                for (Action action : config.getActions()) {
+                    Utils.setAction(context, action);
                 }
-                return null;
             }
-
-            @Override
-            protected void onPostExecute(Void v) {
+            handler.post(() -> {
                 if (uiNotifier != null) {
                     uiNotifier.onConfigUpdateComplete();
                 }
 
-                // Send notification about the configuration update to all plugins
                 Intent intent = new Intent(Const.INTENT_PUSH_NOTIFICATION_PREFIX + PushMessage.TYPE_CONFIG_UPDATED);
                 context.sendBroadcast(intent);
 
                 RemoteLogger.log(context, Const.LOG_VERBOSE, "Update flow completed");
                 if (pendingInstallations.size() > 0) {
-                    // Some apps are still pending installation
-                    // Let's wait until they're all installed
-                    // Then notify UI about that so it could refresh the screen
                     waitForInstallComplete();
                 } else {
                     unregisterAppInstallReceiver();
                 }
-
-                // onConfigUpdateComplete() method contents
-                /*
-                Log.i(Const.LOG_TAG, "Showing content from setActions()");
-                showContent(settingsHelper.getConfig());
-                 */
-            }
-        }.execute();
+            });
+        });
     }
 
     private void waitForInstallComplete() {
-        new AsyncTask<Void, Void, Void>() {
-
-            @Override
-            protected Void doInBackground(Void... voids) {
-                for (int n = 0; n < 60; n++) {
-                    if (pendingInstallations.size() == 0) {
-                        break;
-                    }
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+        backgroundExecutor.execute(() -> {
+            for (int n = 0; n < 60; n++) {
+                if (pendingInstallations.size() == 0) {
+                    break;
                 }
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+            handler.post(() -> {
                 unregisterAppInstallReceiver();
                 if (uiNotifier != null) {
                     uiNotifier.onAllAppInstallComplete();
                 }
-                return null;
-            }
-        }.execute();
+            });
+        });
     }
 
 
