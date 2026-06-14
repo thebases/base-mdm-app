@@ -149,54 +149,47 @@ public class ConfigUpdater {
         if (uiNotifier != null) {
             uiNotifier.onConfigUpdateStart();
         }
-        new GetServerConfigTask( context ) {
-            @Override
-            public void onComplete( int result ) {
-                configInitializing = false;
-                Log.i(Const.LOG_TAG, "updateConfig(): set configInitializing=false after getting config");
+        GetServerConfigTask serverConfigTask = new GetServerConfigTask(context);
+        serverConfigTask.execute(result -> {
+            configInitializing = false;
+            Log.i(Const.LOG_TAG, "updateConfig(): set configInitializing=false after getting config");
 
-                switch ( result ) {
-                    case Const.TASK_SUCCESS:
-                        RemoteLogger.log(context, Const.LOG_INFO, "Configuration updated");
-                        updateRemoteLogConfig();
-                        break;
-                    case Const.TASK_ERROR:
-                        RemoteLogger.log(context, Const.LOG_WARN, "Failed to update config: server error");
-                        if (uiNotifier != null) {
-                            uiNotifier.onConfigUpdateServerError(getErrorText());
-                        }
-                        break;
-                    case Const.TASK_NETWORK_ERROR:
-                        RemoteLogger.log(context, Const.LOG_WARN, "Failed to update config: network error");
-                        if (retry) {
-                            // Retry the request once because WiFi may not yet be initialized
-                            retry = false;
-                            handler.postDelayed(new Runnable() {
-                                @Override
-                                public void run() {
-                                    updateConfig(context, uiNotifier, userInteraction);
-                                }
-                            }, 15000);
-                        } else {
-                            if (settingsHelper.getConfig() != null && !userInteraction) {
-                                if (uiNotifier != null && settingsHelper.getConfig().isShowWifi()) {
-                                    // Show network error dialog with Wi-Fi settings
-                                    // if it is required by the web panel
-                                    // so the user can set up WiFi even in kiosk mode
-                                    uiNotifier.onConfigUpdateNetworkError(getErrorText());
-                                } else {
-                                    updateRemoteLogConfig();
-                                }
+            switch (result) {
+                case Const.TASK_SUCCESS:
+                    RemoteLogger.log(context, Const.LOG_INFO, "Configuration updated");
+                    updateRemoteLogConfig();
+                    break;
+                case Const.TASK_ERROR:
+                    RemoteLogger.log(context, Const.LOG_WARN, "Failed to update config: server error");
+                    if (uiNotifier != null) {
+                        uiNotifier.onConfigUpdateServerError(serverConfigTask.getErrorText());
+                    }
+                    break;
+                case Const.TASK_NETWORK_ERROR:
+                    RemoteLogger.log(context, Const.LOG_WARN, "Failed to update config: network error");
+                    if (retry) {
+                        // Retry the request once because WiFi may not yet be initialized
+                        retry = false;
+                        handler.postDelayed(() -> updateConfig(context, uiNotifier, userInteraction), 15000);
+                    } else {
+                        if (settingsHelper.getConfig() != null && !userInteraction) {
+                            if (uiNotifier != null && settingsHelper.getConfig().isShowWifi()) {
+                                // Show network error dialog with Wi-Fi settings
+                                // if it is required by the web panel
+                                // so the user can set up WiFi even in kiosk mode
+                                uiNotifier.onConfigUpdateNetworkError(serverConfigTask.getErrorText());
                             } else {
-                                if (uiNotifier != null) {
-                                    uiNotifier.onConfigUpdateNetworkError(getErrorText());
-                                }
+                                updateRemoteLogConfig();
+                            }
+                        } else {
+                            if (uiNotifier != null) {
+                                uiNotifier.onConfigUpdateNetworkError(serverConfigTask.getErrorText());
                             }
                         }
-                        break;
-                }
+                    }
+                    break;
             }
-        }.execute();
+        });
     }
 
     public void skipConfigLoad() {
@@ -206,31 +199,26 @@ public class ConfigUpdater {
     private void updateRemoteLogConfig() {
         Log.i(Const.LOG_TAG, "updateRemoteLogConfig(): get logging configuration");
 
-        GetRemoteLogConfigTask task = new GetRemoteLogConfigTask(context) {
-            @Override
-            public void onComplete( int result ) {
-                Log.i(Const.LOG_TAG, "updateRemoteLogConfig(): result=" + result);
-                boolean deviceOwner = Utils.isDeviceOwner(context);
-                RemoteLogger.log(context, Const.LOG_INFO, "Device owner: " + deviceOwner);
-                if (deviceOwner) {
-                    setSelfPermissions(settingsHelper.getConfig() != null ? settingsHelper.getConfig().getAppPermissions() : null);
-                }
-                try {
-                    if (settingsHelper.getConfig() != null && uiNotifier != null) {
-                        uiNotifier.onConfigLoaded();
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                if (!loadOnly) {
-                    checkServerMigration();
-                } else {
-                    Log.d(Const.LOG_TAG, "LoadOnly flag set, finishing the update flow");
-                }
-                // If loadOnly flag is set, we finish the flow here
+        new GetRemoteLogConfigTask(context).execute(result -> {
+            Log.i(Const.LOG_TAG, "updateRemoteLogConfig(): result=" + result);
+            boolean deviceOwner = Utils.isDeviceOwner(context);
+            RemoteLogger.log(context, Const.LOG_INFO, "Device owner: " + deviceOwner);
+            if (deviceOwner) {
+                setSelfPermissions(settingsHelper.getConfig() != null ? settingsHelper.getConfig().getAppPermissions() : null);
             }
-        };
-        task.execute();
+            try {
+                if (settingsHelper.getConfig() != null && uiNotifier != null) {
+                    uiNotifier.onConfigLoaded();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            if (!loadOnly) {
+                checkServerMigration();
+            } else {
+                Log.d(Const.LOG_TAG, "LoadOnly flag set, finishing the update flow");
+            }
+        });
     }
 
     private void setSelfPermissions(String appPermissionStrategy) {
@@ -328,29 +316,24 @@ public class ConfigUpdater {
         if (config != null && config.getFactoryReset() != null && config.getFactoryReset()) {
             // We got a factory reset request, let's confirm and erase everything!
             RemoteLogger.log(context, Const.LOG_INFO, "Device reset by server request");
-            ConfirmDeviceResetTask confirmTask = new ConfirmDeviceResetTask(context) {
-                @Override
-                public void onComplete(int result) {
-                    // Do a factory reset if we can
-                    if (result != Const.TASK_SUCCESS ) {
-                        RemoteLogger.log(context, Const.LOG_WARN, "Failed to confirm device reset on server");
-                    } else if (Utils.checkAdminMode(context)) {
-                        // no_factory_reset restriction doesn't prevent against admin's reset action
-                        // So we do not need to release this restriction prior to resetting the device
-                        if (!Utils.factoryReset(context)) {
-                            RemoteLogger.log(context, Const.LOG_WARN, "Device reset failed");
-                        }
-                    } else {
-                        RemoteLogger.log(context, Const.LOG_WARN, "Device reset failed: no permissions");
-                    }
-                    // If we can't, proceed the initialization flow
-                    checkRemoteReboot();
-                }
-            };
-
             DeviceInfo deviceInfo = DeviceInfoProvider.getDeviceInfo(context, true, true);
             deviceInfo.setFactoryReset(Utils.checkAdminMode(context));
-            confirmTask.execute(deviceInfo);
+            new ConfirmDeviceResetTask(context).execute(deviceInfo, result -> {
+                // Do a factory reset if we can
+                if (result != Const.TASK_SUCCESS) {
+                    RemoteLogger.log(context, Const.LOG_WARN, "Failed to confirm device reset on server");
+                } else if (Utils.checkAdminMode(context)) {
+                    // no_factory_reset restriction doesn't prevent against admin's reset action
+                    // So we do not need to release this restriction prior to resetting the device
+                    if (!Utils.factoryReset(context)) {
+                        RemoteLogger.log(context, Const.LOG_WARN, "Device reset failed");
+                    }
+                } else {
+                    RemoteLogger.log(context, Const.LOG_WARN, "Device reset failed: no permissions");
+                }
+                // If we can't, proceed the initialization flow
+                checkRemoteReboot();
+            });
 
         } else {
             checkRemoteReboot();
@@ -362,24 +345,19 @@ public class ConfigUpdater {
         if (config != null && config.getReboot() != null && config.getReboot()) {
             // Log and confirm reboot before rebooting
             RemoteLogger.log(context, Const.LOG_INFO, "Rebooting by server request");
-            ConfirmRebootTask confirmTask = new ConfirmRebootTask(context) {
-                @Override
-                public void onComplete(int result) {
-                    if (result != Const.TASK_SUCCESS ) {
-                        RemoteLogger.log(context, Const.LOG_WARN, "Failed to confirm reboot on server");
-                    } else if (Utils.checkAdminMode(context)) {
-                        if (!Utils.reboot(context)) {
-                            RemoteLogger.log(context, Const.LOG_WARN, "Reboot failed");
-                        }
-                    } else {
-                        RemoteLogger.log(context, Const.LOG_WARN, "Reboot failed: no permissions");
-                    }
-                    checkPasswordReset();
-                }
-            };
-
             DeviceInfo deviceInfo = DeviceInfoProvider.getDeviceInfo(context, true, true);
-            confirmTask.execute(deviceInfo);
+            new ConfirmRebootTask(context).execute(deviceInfo, result -> {
+                if (result != Const.TASK_SUCCESS) {
+                    RemoteLogger.log(context, Const.LOG_WARN, "Failed to confirm reboot on server");
+                } else if (Utils.checkAdminMode(context)) {
+                    if (!Utils.reboot(context)) {
+                        RemoteLogger.log(context, Const.LOG_WARN, "Reboot failed");
+                    }
+                } else {
+                    RemoteLogger.log(context, Const.LOG_WARN, "Reboot failed: no permissions");
+                }
+                checkPasswordReset();
+            });
 
         } else {
             checkPasswordReset();
@@ -396,15 +374,8 @@ public class ConfigUpdater {
                 RemoteLogger.log(context, Const.LOG_WARN, "Failed to reset password");
             }
 
-            ConfirmPasswordResetTask confirmTask = new ConfirmPasswordResetTask(context) {
-                @Override
-                public void onComplete(int result) {
-                    setDefaultLauncher();
-                }
-            };
-
             DeviceInfo deviceInfo = DeviceInfoProvider.getDeviceInfo(context, true, true);
-            confirmTask.execute(deviceInfo);
+            new ConfirmPasswordResetTask(context).execute(deviceInfo, result -> setDefaultLauncher());
 
         } else {
             setDefaultLauncher();

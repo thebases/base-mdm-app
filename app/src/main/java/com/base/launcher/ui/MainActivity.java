@@ -2346,27 +2346,23 @@ public class MainActivity
 
     public void checkAdministratorPassword( View view ) {
         dialogEnterPasswordBinding.setLoading( true );
-        GetServerConfigTask task = new GetServerConfigTask( this ) {
-            @Override
-            public void onComplete(int result) {
-                dialogEnterPasswordBinding.setLoading( false );
+        new GetServerConfigTask(this).execute(result -> {
+            dialogEnterPasswordBinding.setLoading(false);
 
-                String masterPassword = CryptoHelper.getMD5String( "12345678" );
-                if ( settingsHelper.getConfig() != null && settingsHelper.getConfig().getPassword() != null ) {
-                    masterPassword = settingsHelper.getConfig().getPassword();
-                }
-
-                if ( CryptoHelper.getMD5String( dialogEnterPasswordBinding.password.getText().toString() ).
-                        equals( masterPassword ) ) {
-                    dismissDialog(enterPasswordDialog);
-                    dialogEnterPasswordBinding.setError( false );
-                    openAdminPanel();
-                } else {
-                    dialogEnterPasswordBinding.setError( true );
-                }
+            String masterPassword = CryptoHelper.getMD5String("12345678");
+            if (settingsHelper.getConfig() != null && settingsHelper.getConfig().getPassword() != null) {
+                masterPassword = settingsHelper.getConfig().getPassword();
             }
-        };
-        task.execute();
+
+            if (CryptoHelper.getMD5String(dialogEnterPasswordBinding.password.getText().toString())
+                    .equals(masterPassword)) {
+                dismissDialog(enterPasswordDialog);
+                dialogEnterPasswordBinding.setError(false);
+                openAdminPanel();
+            } else {
+                dialogEnterPasswordBinding.setError(true);
+            }
+        });
     }
 
     private void openAdminPanel() {

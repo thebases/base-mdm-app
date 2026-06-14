@@ -1,7 +1,6 @@
 package com.base.launcher.kozen;
 
 import android.content.Context;
-import android.os.AsyncTask;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
@@ -383,8 +382,7 @@ public class KozenCommandHandler {
             return -1;
         }
         // Run everything (download + OTA) on a worker thread
-//        Executors.newSingleThreadExecutor().execute(() -> {
-        AsyncTask.execute(()->{
+        Executors.newSingleThreadExecutor().execute(() -> {
             // flag to control "never off" toast
             AtomicBoolean toastRunning = new AtomicBoolean(true);
             Handler mainHandler = new Handler(Looper.getMainLooper());

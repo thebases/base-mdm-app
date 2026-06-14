@@ -100,7 +100,6 @@ public class PushNotificationProcessor {
             return;
         } else if (message.getMessageType().equals(PushMessage.TYPE_UNINSTALL_APP)) {
             // Uninstall application
-//            AsyncTask.execute(() -> uninstallApplication(context, message.getPayloadJSON()));
             executor.execute(() -> {
                 JSONObject jsonObject = new JSONObject();
 
@@ -138,7 +137,6 @@ public class PushNotificationProcessor {
             return;
         } else if (message.getMessageType().equals(PushMessage.TYPE_REBOOT)) {
             // Reboot a device
-//            AsyncTask.execute(() -> reboot(context));
             executor.execute(() -> reboot(context));
 
             return;

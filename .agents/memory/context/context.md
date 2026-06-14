@@ -9,7 +9,7 @@
 ## Active Fix Plan
 File: `.agents/planning/2026-06-14-kotlin-migration-android-fix-plan.md`
 Phase order: 0 (secrets) → 1 (add Kotlin) → 2 (deps) → 3 (json/) → 4 (util/) → 5 (task/) → 6 (quality) → 7 (MainActivity decompose)
-Current status: Phases 0–6 COMPLETE (except I5 unit tests — large effort, skipped). Next: Phase 7 (MainActivity decomposition — B2)
+Current status: Phases 0–6 COMPLETE (except I5 unit tests — large effort, skipped). Phase 5 re-done with idiomatic coroutines (TaskCallback fun interface, lambda callers). Next: Phase 7 (MainActivity decomposition — B2)
 
 ## Key Findings (from review 2026-06-14)
 - B1 OPEN: MQTT password, keystore password, request signature hardcoded in build.gradle
@@ -28,6 +28,6 @@ Current status: Phases 0–6 COMPLETE (except I5 unit tests — large effort, sk
 - Main activity: app/src/main/java/com/base/launcher/ui/MainActivity.java
 - JSON models: app/src/main/java/com/base/launcher/json/ (20 files — migrate Phase 3)
 - Utilities: app/src/main/java/com/base/launcher/util/ (14 files — migrate Phase 4)
-- Tasks: app/src/main/java/com/base/launcher/task/ (6 Kotlin coroutine-backed task files; Java AsyncTask duplicates deleted)
+- Tasks: app/src/main/java/com/base/launcher/task/ (6 Kotlin files; all use idiomatic coroutine pattern: CoroutineScope(Dispatchers.Main).launch + withContext(IO); TaskCallback.kt is a shared fun interface; no open class / onComplete subclassing)
 - Server API: app/src/main/java/com/base/launcher/server/ServerService.java (Retrofit interface)
 - MQTT: bundled Eclipse Paho in org.eclipse.paho.android.service package

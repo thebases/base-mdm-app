@@ -2,8 +2,9 @@ package com.base.launcher.ui;
 
 import android.app.AlertDialog;
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.Settings;
 import android.util.Log;
 import android.widget.Toast;
@@ -22,6 +23,8 @@ import com.base.launcher.json.RemoteFile;
 import com.base.launcher.json.ServerConfig;
 import com.base.launcher.util.RemoteLogger;
 import com.base.launcher.util.Utils;
+
+import java.util.concurrent.Executors;
 
 public class InitialSetupActivity extends BaseActivity implements ConfigUpdater.UINotifier {
     private ActivityInitialSetupBinding binding;
@@ -97,18 +100,10 @@ public class InitialSetupActivity extends BaseActivity implements ConfigUpdater.
             if (Utils.isDeviceOwner(this) &&
                     (config.getRunDefaultLauncher() == null || !config.getRunDefaultLauncher())) {
                 // As per the documentation, setting the default preferred activity should not be done on the main thread
-                new AsyncTask<Void, Void, Void>() {
-                    @Override
-                    protected Void doInBackground(Void... voids) {
-                        Utils.setDefaultLauncher(InitialSetupActivity.this);
-                        return null;
-                    }
-
-                    @Override
-                    protected void onPostExecute(Void v) {
-                        completeConfig(settingsHelper);
-                    }
-                }.execute();
+                Executors.newSingleThreadExecutor().execute(() -> {
+                    Utils.setDefaultLauncher(InitialSetupActivity.this);
+                    new Handler(Looper.getMainLooper()).post(() -> completeConfig(settingsHelper));
+                });
                 return;
             } else {
                 // Base MDM works with default system launcher
