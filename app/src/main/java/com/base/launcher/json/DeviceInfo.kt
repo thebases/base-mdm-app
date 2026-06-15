@@ -19,6 +19,7 @@ class DeviceInfo {
     var batteryCharging: String? = null
     var androidVersion: String? = null
     var factoryReset: Boolean? = null
+    var kioskMode: Boolean = false
     var location: Location? = null
     var launcherType: String? = null
     var launcherPackage: String? = null

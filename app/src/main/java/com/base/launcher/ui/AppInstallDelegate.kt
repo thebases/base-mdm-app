@@ -95,7 +95,7 @@ class AppInstallDelegate(
 
     override fun onFileDownloading(remoteFile: RemoteFile) {
         handler.post {
-            binding.setMessage(activity.getString(R.string.main_file_downloading) + " " + remoteFile.getPath())
+            binding.setMessage(activity.getString(R.string.main_file_downloading) + " " + (remoteFile.path ?: ""))
             binding.setDownloading(true)
         }
     }
@@ -112,7 +112,7 @@ class AppInstallDelegate(
     override fun onFileDownloadError(remoteFile: RemoteFile) {
         if (!isContentShown()) {
             downloadingFile = true
-            createAndShowFileNotDownloadedDialog(remoteFile.getUrl())
+            createAndShowFileNotDownloadedDialog(remoteFile.url ?: "")
             binding.setDownloading(false)
         } else {
             configUpdater.skipDownloadFiles()
@@ -123,7 +123,7 @@ class AppInstallDelegate(
         if (!isContentShown()) {
             try {
                 AlertDialog.Builder(activity)
-                    .setMessage(activity.getString(R.string.file_create_error) + " " + remoteFile.getPath())
+                    .setMessage(activity.getString(R.string.file_create_error) + " " + (remoteFile.path ?: ""))
                     .setPositiveButton(R.string.dialog_administrator_mode_continue) { _, _ ->
                         configUpdater.skipDownloadFiles()
                     }
@@ -143,21 +143,21 @@ class AppInstallDelegate(
 
     override fun onAppRemoving(application: Application) {
         handler.post {
-            binding.setMessage(activity.getString(R.string.main_app_removing) + " " + application.getName())
+            binding.setMessage(activity.getString(R.string.main_app_removing) + " " + (application.name ?: ""))
             binding.setDownloading(false)
         }
     }
 
     override fun onAppDownloading(application: Application) {
         handler.post {
-            binding.setMessage(activity.getString(R.string.main_app_downloading) + " " + application.getName())
+            binding.setMessage(activity.getString(R.string.main_app_downloading) + " " + (application.name ?: ""))
             binding.setDownloading(true)
         }
     }
 
     override fun onAppInstalling(application: Application) {
         handler.post {
-            binding.setMessage(activity.getString(R.string.main_app_installing) + " " + application.getName())
+            binding.setMessage(activity.getString(R.string.main_app_installing) + " " + (application.name ?: ""))
             binding.setDownloading(false)
         }
     }
@@ -165,7 +165,7 @@ class AppInstallDelegate(
     override fun onAppDownloadError(application: Application) {
         if (!isContentShown()) {
             downloadingFile = false
-            createAndShowFileNotDownloadedDialog(application.getName())
+            createAndShowFileNotDownloadedDialog(application.name ?: "")
             binding.setDownloading(false)
         } else {
             configUpdater.skipDownloadApps()

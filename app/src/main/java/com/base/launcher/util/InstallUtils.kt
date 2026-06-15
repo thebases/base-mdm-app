@@ -34,7 +34,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 object InstallUtils {
-    interface DownloadProgress {
+    fun interface DownloadProgress {
         fun onDownloadProgress(progress: Int, total: Long, current: Long)
     }
 
@@ -75,7 +75,8 @@ object InstallUtils {
                 continue
             }
             try {
-                val packageInfo = packageManager.getPackageInfo(application.pkg, 0)
+                val pkg = application.pkg ?: continue
+                val packageInfo = packageManager.getPackageInfo(pkg, 0)
 
                 if (application.isRemove && application.version != "0" &&
                     !areVersionsEqual(packageInfo.versionName, packageInfo.versionCode, application.version, application.code)) {
@@ -87,17 +88,17 @@ object InstallUtils {
                 if (!application.isRemove && !upgradingBaseFreeToFull(context, application, packageInfo) &&
                     (application.isSkipVersion || application.version == "0" ||
                         areVersionsEqual(packageInfo.versionName, packageInfo.versionCode, application.version, application.code))) {
-                    Log.d(Const.LOG_TAG, "checkAndUpdateApplications(): app ${application.pkg} versions match: ${application.version} ${packageInfo.versionName}, skipping")
+                    Log.d(Const.LOG_TAG, "checkAndUpdateApplications(): app $pkg versions match: ${application.version} ${packageInfo.versionName}, skipping")
                     it.remove()
                     continue
                 }
 
                 if (!application.isRemove &&
                     compareVersions(packageInfo.versionName, packageInfo.versionCode, application.version, application.code) > 0) {
-                    RemoteLogger.log(context, Const.LOG_DEBUG, "Downgrade requested for ${application.pkg}: installed version ${packageInfo.versionName}, required version ${application.version}")
+                    RemoteLogger.log(context, Const.LOG_DEBUG, "Downgrade requested for $pkg: installed version ${packageInfo.versionName}, required version ${application.version}")
                     var canDowngrade = false
                     for (a in applications) {
-                        if (a.pkg.equals(application.pkg, ignoreCase = true) && a.isRemove &&
+                        if (a.pkg.equals(pkg, ignoreCase = true) && a.isRemove &&
                             areVersionsEqual(packageInfo.versionName, packageInfo.versionCode, a.version, a.code)) {
                             canDowngrade = true
                             break
@@ -191,8 +192,8 @@ object InstallUtils {
     }
 
     @JvmStatic
-    fun getAppTempPath(context: Context, strUrl: String): String {
-        return File(context.getExternalFilesDir(null), getFileName(strUrl)).absolutePath
+    fun getAppTempPath(context: Context, strUrl: String?): String {
+        return File(context.getExternalFilesDir(null), getFileName(strUrl ?: "")).absolutePath
     }
 
     @JvmStatic
@@ -268,7 +269,8 @@ object InstallUtils {
         }
     }
 
-    private fun getFileName(strUrl: String): String {
+    private fun getFileName(strUrl: String?): String {
+        if (strUrl == null) return ""
         val slashIndex = strUrl.lastIndexOf("/")
         return if (slashIndex >= 0) strUrl.substring(slashIndex) else strUrl
     }
@@ -321,7 +323,9 @@ object InstallUtils {
     @JvmStatic
     fun silentUninstallApplication(context: Context, packageName: String) {
         try {
-            context.packageManager.packageInstaller.uninstall(packageName, createIntentSender(context, 0, null))
+            val pi = context.packageManager.packageInstaller
+            val sr = createIntentSender(context, 0, packageName)
+            pi.uninstall(packageName.toString(), sr)
         } catch (_: Exception) {}
     }
 

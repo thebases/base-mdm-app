@@ -79,10 +79,10 @@ class KozenCommandHandler(context: Context) {
 
             OTA_HTTP_CLIENT.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
-                    throw IOException("Unexpected HTTP code ${response.code}")
+                    throw IOException("Unexpected HTTP code ${response.code()}")
                 }
 
-                val body = response.body ?: throw IOException("Empty response body")
+                val body = response.body() ?: throw IOException("Empty response body")
                 val contentLength = body.contentLength() // can be -1 if unknown
                 RemoteLogger.log(context, Const.LOG_INFO,
                     "Starting file download, size = $contentLength bytes")
@@ -139,10 +139,10 @@ class KozenCommandHandler(context: Context) {
 
             OTA_HTTP_CLIENT.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
-                    throw IOException("Unexpected HTTP code ${response.code}")
+                    throw IOException("Unexpected HTTP code ${response.code()}")
                 }
 
-                val body = response.body ?: throw IOException("Empty response body")
+                val body = response.body() ?: throw IOException("Empty response body")
                 val contentLength = body.contentLength() // may be -1
                 RemoteLogger.log(context, Const.LOG_INFO,
                     "Starting boot logo download, size = $contentLength bytes")

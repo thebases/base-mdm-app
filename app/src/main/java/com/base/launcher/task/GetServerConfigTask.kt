@@ -65,11 +65,11 @@ class GetServerConfigTask(private val context: Context) {
     }
 
     private fun doInBackground(): Int {
-        val enrollOptions: DeviceEnrollOptions? = if (settingsHelper.config == null) {
+        val enrollOptions: DeviceEnrollOptions? = if (settingsHelper?.config == null) {
             DeviceEnrollOptions().apply {
-                customer = settingsHelper.enrollOptionCustomer
-                configuration = settingsHelper.enrollOptionConfigName
-                groups = settingsHelper.enrollOptionGroup
+                customer = settingsHelper?.enrollOptionCustomer
+                configuration = settingsHelper?.enrollOptionConfigName
+                groups = settingsHelper?.enrollOptionGroup?.toList()
             }
         } else null
 
@@ -182,9 +182,9 @@ class GetServerConfigTask(private val context: Context) {
             return null
         }
 
-        val serverResponse = response.body()!!.string()
+        val serverResponse: String = response.body()?.string() ?: ""
         val serverConfigResponse = try {
-            ObjectMapper().readValue(serverResponse, ServerConfigResponse::class.java)
+            ObjectMapper().readValue(java.lang.String.valueOf(serverResponse), ServerConfigResponse::class.java)
         } catch (e: Exception) {
             errorText = "Failed to parse JSON"
             Log.e(Const.LOG_TAG, errorText)
@@ -201,7 +201,7 @@ class GetServerConfigTask(private val context: Context) {
         val serverSignature = response.headers()[Const.HEADER_RESPONSE_SIGNATURE]
         if (serverSignature == null) {
             errorText = "Missing ${Const.HEADER_RESPONSE_SIGNATURE} flag, dropping response"
-            Log.e(Const.LOG_TAG, errorText)
+            Log.e(Const.LOG_TAG, errorText!!)
             buildTaskErrorTextSecure(response, serverResponse)
             return null
         }
@@ -215,18 +215,18 @@ class GetServerConfigTask(private val context: Context) {
             return null
         }
 
-        val serverData = serverResponse.substring(pos + dataMarker.length, serverResponse.length - 1)
+        val serverData: String = serverResponse.substring(pos + dataMarker.length, serverResponse.length - 1)
         val calculatedSignature = CryptoHelper.getSHA1String(
-            BuildConfig.REQUEST_SIGNATURE + serverData.replace("\\s".toRegex(), "")
+            ((BuildConfig.REQUEST_SIGNATURE ?: "") + serverData.replace("\\s".toRegex(), ""))!!
         )
         if (!calculatedSignature.equals(serverSignature, ignoreCase = true)) {
             errorText = "Server signature $serverSignature doesn't match calculated signature $calculatedSignature, dropping response"
-            Log.e(Const.LOG_TAG, errorText)
+            Log.e(Const.LOG_TAG, errorText!!)
             buildTaskErrorTextSecure(response, serverResponse)
             return null
         }
 
-        return ObjectMapper().readValue(serverData, ServerConfig::class.java)
+        return ObjectMapper().readValue(java.lang.String.valueOf(serverData), ServerConfig::class.java)
     }
 
     private fun enrollPlain(
@@ -291,9 +291,9 @@ class GetServerConfigTask(private val context: Context) {
             return null
         }
 
-        val serverResponse = response.body()!!.string()
+        val serverResponse: String = response.body()?.string() ?: ""
         val serverConfigResponse = try {
-            ObjectMapper().readValue(serverResponse, ServerConfigResponse::class.java)
+            ObjectMapper().readValue(java.lang.String.valueOf(serverResponse), ServerConfigResponse::class.java)
         } catch (e: Exception) {
             errorText = "Failed to parse JSON"
             Log.e(Const.LOG_TAG, errorText)
@@ -310,7 +310,7 @@ class GetServerConfigTask(private val context: Context) {
         val serverSignature = response.headers()[Const.HEADER_RESPONSE_SIGNATURE]
         if (serverSignature == null) {
             errorText = "Missing ${Const.HEADER_RESPONSE_SIGNATURE} flag, dropping response"
-            Log.e(Const.LOG_TAG, errorText)
+            Log.e(Const.LOG_TAG, errorText!!)
             buildTaskErrorTextSecure(response, serverResponse)
         }
 
@@ -323,18 +323,18 @@ class GetServerConfigTask(private val context: Context) {
             return null
         }
 
-        val serverData = serverResponse.substring(pos + dataMarker.length, serverResponse.length - 1)
+        val serverData: String = serverResponse.substring(pos + dataMarker.length, serverResponse.length - 1)
         val calculatedSignature = CryptoHelper.getSHA1String(
-            BuildConfig.REQUEST_SIGNATURE + serverData.replace("\\s".toRegex(), "")
+            ((BuildConfig.REQUEST_SIGNATURE ?: "") + serverData.replace("\\s".toRegex(), ""))!!
         )
         if (!calculatedSignature.equals(serverSignature, ignoreCase = true)) {
             errorText = "Server signature $serverSignature doesn't match calculated signature $calculatedSignature, dropping response"
-            Log.e(Const.LOG_TAG, errorText)
+            Log.e(Const.LOG_TAG, errorText!!)
             buildTaskErrorTextSecure(response, serverResponse)
             return null
         }
 
-        return ObjectMapper().readValue(serverData, ServerConfig::class.java)
+        return ObjectMapper().readValue(java.lang.String.valueOf(serverData), ServerConfig::class.java)
     }
 
     private fun buildTaskErrorText(response: Response<ServerConfigResponse>) {

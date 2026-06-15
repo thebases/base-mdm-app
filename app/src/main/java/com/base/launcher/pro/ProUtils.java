@@ -74,6 +74,10 @@ public class ProUtils {
         // Stub    
     }
 
+    public static boolean isKioskModeRunning(Context context) {
+        return false;
+    }
+
     public static String getAppName(Context context) {
         return context.getString(R.string.app_name);
     }

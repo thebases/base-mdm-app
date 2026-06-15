@@ -51,10 +51,11 @@ object DeviceInfoProvider {
                 for (application in requiredApps) {
                     if (application.isRemove) continue
                     try {
-                        val packageInfo = packageManager.getPackageInfo(application.pkg, 0)
+                        val pkg = application.pkg ?: continue
+                        val packageInfo = packageManager.getPackageInfo(pkg, 0)
                         val installedApp = Application().apply {
                             name = application.name
-                            pkg = packageInfo.packageName
+                            this.pkg = packageInfo.packageName
                             version = packageInfo.versionName
                         }
                         val appPresents = applications.any { it.pkg.equals(installedApp.pkg, ignoreCase = true) }
@@ -116,7 +117,7 @@ object DeviceInfoProvider {
         deviceInfo.androidVersion = Build.VERSION.RELEASE
         deviceInfo.location = getLocation(context)
         deviceInfo.isMdmMode = Utils.isDeviceOwner(context)
-        deviceInfo.setKioskMode(ProUtils.isKioskModeRunning(context))
+        deviceInfo.kioskMode = ProUtils.isKioskModeRunning(context)
         deviceInfo.launcherType = Utils.getLauncherVariant()
         deviceInfo.cpu = Build.CPU_ABI
         deviceInfo.serial = getSerialNumber()

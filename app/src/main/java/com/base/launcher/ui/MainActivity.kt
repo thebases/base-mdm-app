@@ -130,8 +130,8 @@ class MainActivity :
                     updateConfig(false)
                 }
                 Const.ACTION_HIDE_SCREEN -> {
-                    val serverConfig = SettingsHelper.getInstance(this@MainActivity).getConfig()
-                    if (serverConfig.getLock() != null && serverConfig.getLock()) {
+                    val serverConfig = SettingsHelper.getInstance(this@MainActivity).config
+                    if (serverConfig?.lock == true) {
                         lockScreenManager.showLockScreen()
                     } else if (lockScreenManager.applicationNotAllowed != null) {
                         val v = lockScreenManager.applicationNotAllowed!!
@@ -420,20 +420,19 @@ class MainActivity :
 
     private fun startAppsAtBoot() {
         if (SystemClock.uptimeMillis() > BOOT_DURATION_SEC * 1000L) return
-        val config = settingsHelper!!.getConfig() ?: return
-        if (config.getApplications() == null) return
+        val config = settingsHelper!!.config ?: return
 
         backgroundExecutor.execute {
             var appStarted = false
-            for (application in config.getApplications()) {
-                if (application.isRunAtBoot()) {
+            for (application in config.applications) {
+                if (application.isRunAtBoot) {
                     try { Thread.sleep(PAUSE_BETWEEN_AUTORUNS_SEC * 1000L) }
                     catch (e: InterruptedException) { Thread.currentThread().interrupt(); return@execute }
-                    val launchIntent = packageManager.getLaunchIntentForPackage(application.getPkg())
+                    val launchIntent = packageManager.getLaunchIntentForPackage(application.pkg ?: "")
                     if (launchIntent != null) { startActivity(launchIntent); appStarted = true }
                 }
             }
-            if (appStarted && !config.isAutostartForeground()) {
+            if (appStarted && !config.isAutostartForeground) {
                 try { Thread.sleep(PAUSE_BETWEEN_AUTORUNS_SEC * 1000L) }
                 catch (e: InterruptedException) { Thread.currentThread().interrupt(); return@execute }
                 val intent = Intent(this, MainActivity::class.java)
@@ -489,7 +488,7 @@ class MainActivity :
 
     private fun isContentShown(): Boolean {
         if (::binding.isInitialized) {
-            return binding.getShowContent() != null && binding.getShowContent()
+            return binding.showContent == true
         }
         return false
     }
@@ -539,7 +538,7 @@ class MainActivity :
         while (applicationsForRun.isNotEmpty()) {
             val application = applicationsForRun.removeAt(0)
             handler.postDelayed({
-                val launchIntent = packageManager.getLaunchIntentForPackage(application.getPkg())
+                val launchIntent = packageManager.getLaunchIntentForPackage(application.pkg ?: "")
                 if (launchIntent != null) startActivity(launchIntent)
             }, (pause * 1000).toLong())
             pause += PAUSE_BETWEEN_AUTORUNS_SEC
@@ -557,9 +556,9 @@ class MainActivity :
     }
 
     private fun startLocationService() {
-        val config = settingsHelper!!.getConfig()
+        val config = settingsHelper!!.config ?: return
         val intent = Intent(this, LocationService::class.java)
-        intent.action = config.getRequestUpdates() ?: LocationService.ACTION_STOP
+        intent.action = config.requestUpdates ?: LocationService.ACTION_STOP
         startService(intent)
     }
 
@@ -578,16 +577,19 @@ class MainActivity :
     }
 
     override fun onConfigUpdateNetworkError(errorText: String) {
+        val config = settingsHelper!!.config
         createAndShowNetworkErrorDialog(
-            settingsHelper!!.getBaseUrl(),
-            settingsHelper!!.getServerProject(),
+            settingsHelper!!.baseUrl,
+            settingsHelper!!.serverProject,
             errorText,
-            settingsHelper!!.getConfig() == null && !settingsHelper!!.isQrProvisioning(),
-            settingsHelper!!.getConfig() == null || settingsHelper!!.getConfig().isShowWifi()
+            config == null && !settingsHelper!!.isQrProvisioning(),
+            config == null || config.isShowWifi
         )
     }
 
-    override fun onConfigLoaded() = applyEarlyPolicies(settingsHelper!!.getConfig()).let {}
+    override fun onConfigLoaded() {
+        settingsHelper!!.config?.let { applyEarlyPolicies(it) }
+    }
 
     override fun onPoliciesUpdated() = startLocationServiceWithRetry()
 
@@ -618,7 +620,7 @@ class MainActivity :
         }
         Log.i(Const.LOG_TAG, "Showing content from setActions()")
         settingsHelper!!.refreshConfig(this)
-        showContent(settingsHelper!!.getConfig())
+        settingsHelper!!.config?.let { showContent(it) }
     }
 
     override fun onAllAppInstallComplete() = appInstallDelegate.onAllAppInstallComplete()
@@ -693,9 +695,10 @@ class MainActivity :
         dialogEnterPasswordBinding!!.setLoading(true)
         GetServerConfigTask(this).execute { _ ->
             dialogEnterPasswordBinding!!.setLoading(false)
+            val config = settingsHelper!!.config
             var masterPassword = CryptoHelper.getMD5String("12345678")
-            if (settingsHelper!!.getConfig() != null && settingsHelper!!.getConfig().getPassword() != null) {
-                masterPassword = settingsHelper!!.getConfig().getPassword()
+            if (config?.password != null) {
+                masterPassword = config.password
             }
             if (CryptoHelper.getMD5String(dialogEnterPasswordBinding!!.password.text.toString()) == masterPassword) {
                 dismissDialog(enterPasswordDialog)
@@ -857,7 +860,7 @@ class MainActivity :
     fun createScreensIfNeeded() {
         lockScreenManager.createApplicationNotAllowedScreen { createAndShowEnterPasswordDialog() }
         lockScreenManager.createLockScreen()
-        if (settingsHelper?.getConfig()?.getLockStatusBar() == true) {
+        if (settingsHelper?.config?.lockStatusBar == true) {
             statusBarView = ProUtils.preventStatusBarExpansion(this)
             rightToolbarView = ProUtils.preventApplicationsList(this)
         }
@@ -879,9 +882,9 @@ class MainActivity :
     private fun createFileFromTemplate(srcFile: File, dstFile: File, deviceId: String, config: ServerConfig) {
         var content = FileUtils.readFileToString(srcFile)
         content = content.replace("DEVICE_NUMBER", deviceId)
-            .replace("CUSTOM1", config.getCustom1() ?: "")
-            .replace("CUSTOM2", config.getCustom2() ?: "")
-            .replace("CUSTOM3", config.getCustom3() ?: "")
+            .replace("CUSTOM1", config.custom1 ?: "")
+            .replace("CUSTOM2", config.custom2 ?: "")
+            .replace("CUSTOM3", config.custom3 ?: "")
         FileUtils.writeStringToFile(dstFile, content)
     }
 }

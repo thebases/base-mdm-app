@@ -77,7 +77,7 @@ class LockScreenManager(
         lockScreen!!.findViewById<View>(R.id.package_id).visibility = View.GONE
         lockScreen!!.findViewById<View>(R.id.message2).visibility = View.GONE
         val textView = lockScreen!!.findViewById<TextView>(R.id.message)
-        textView.text = activity.getString(R.string.device_locked, SettingsHelper.getInstance(activity).getDeviceId())
+        textView.text = activity.getString(R.string.device_locked, settingsHelper.deviceId)
         lockScreen!!.visibility = View.GONE
         try {
             manager.addView(lockScreen, overlayLockScreenParams())
@@ -96,8 +96,8 @@ class LockScreenManager(
             createLockScreen()
             if (lockScreen == null) return
         }
-        val lockAdminMessage = settingsHelper.getConfig().getLockMessage()
-        var lockMessage = activity.getString(R.string.device_locked, SettingsHelper.getInstance(activity).getDeviceId())
+        val lockAdminMessage = settingsHelper.config?.lockMessage
+        var lockMessage = activity.getString(R.string.device_locked, settingsHelper.deviceId)
         if (lockAdminMessage != null) {
             lockMessage += " $lockAdminMessage"
         }

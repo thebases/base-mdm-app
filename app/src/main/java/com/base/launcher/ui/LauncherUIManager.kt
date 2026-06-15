@@ -10,11 +10,11 @@ import android.net.ConnectivityManager
 import android.os.Handler
 import android.provider.Settings
 import android.util.Log
-import android.view.RelativeLayout
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.ImageView
+import android.widget.RelativeLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.recyclerview.widget.GridLayoutManager
@@ -74,9 +74,9 @@ class LauncherUIManager(
 
     fun isDarkBackground(): Boolean {
         return try {
-            val config = settingsHelper.getConfig()
-            if (config.getBackgroundColor() != null) {
-                val color = Color.parseColor(config.getBackgroundColor())
+            val config = settingsHelper.config
+            if (config?.backgroundColor != null) {
+                val color = Color.parseColor(config.backgroundColor)
                 !Utils.isLightColor(color)
             } else true
         } catch (e: Exception) {
@@ -93,7 +93,7 @@ class LauncherUIManager(
         layoutParams.addRule(RelativeLayout.ALIGN_PARENT_RIGHT)
 
         var offsetRight = 0
-        if (settingsHelper.getConfig()?.getLockStatusBar() == true) {
+        if (settingsHelper.config?.lockStatusBar == true) {
             offsetRight = activity.resources.getDimensionPixelOffset(R.dimen.prevent_applications_list_width)
         }
 
@@ -187,18 +187,18 @@ class LauncherUIManager(
     fun applyLatePolicies(config: ServerConfig): Boolean {
         var dialogWillShow = false
 
-        if (config.getGps() != null) {
+        if (config.gps != null) {
             val lm = activity.getSystemService(android.content.Context.LOCATION_SERVICE) as LocationManager?
             if (lm != null) {
                 val enabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER)
-                if (config.getGps() && !enabled) {
+                if (config.gps == true && !enabled) {
                     dialogWillShow = true
                     onPostDelayedSystemSettingDialog(
                         activity.getString(R.string.message_turn_on_gps),
                         Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS),
                         1, false  // REQUEST_CODE_GPS_STATE_CHANGE = 1
                     )
-                } else if (!config.getGps() && enabled) {
+                } else if (config.gps == false && enabled) {
                     dialogWillShow = true
                     onPostDelayedSystemSettingDialog(
                         activity.getString(R.string.message_turn_off_gps),
@@ -209,16 +209,16 @@ class LauncherUIManager(
             }
         }
 
-        if (config.getMobileData() != null) {
+        if (config.mobileData != null) {
             val cm = activity.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as ConnectivityManager?
             if (cm != null && !dialogWillShow) {
                 try {
                     val enabled = Utils.isMobileDataEnabled(activity)
-                    if (config.getMobileData() && !enabled) {
+                    if (config.mobileData == true && !enabled) {
                         onPostDelayedSystemSettingDialog(
                             activity.getString(R.string.message_turn_on_mobile_data), null, null, false
                         )
-                    } else if (!config.getMobileData() && enabled) {
+                    } else if (config.mobileData == false && enabled) {
                         onPostDelayedSystemSettingDialog(
                             activity.getString(R.string.message_turn_off_mobile_data), null, null, false
                         )
@@ -229,7 +229,7 @@ class LauncherUIManager(
             }
         }
 
-        if (!Utils.setPasswordMode(config.getPasswordMode(), activity)) {
+        if (!Utils.setPasswordMode(config.passwordMode, activity)) {
             val updatePasswordIntent = Intent(android.app.admin.DevicePolicyManager.ACTION_SET_NEW_PASSWORD)
             onPostDelayedSystemSettingDialog(
                 activity.getString(R.string.message_set_password), updatePasswordIntent, null, true
@@ -246,14 +246,14 @@ class LauncherUIManager(
         onScheduleDeviceInfoNeeded()
         onScheduleInstalledApps()
 
-        if (config.getLock() != null && config.getLock()) {
+        if (config.lock == true) {
             lockScreenManager.showLockScreen()
             return
         } else {
             lockScreenManager.hideLockScreen()
         }
 
-        if (config.getRunDefaultLauncher() != null && config.getRunDefaultLauncher() &&
+        if (config.runDefaultLauncher == true &&
             !activity.packageName.equals(Utils.getDefaultLauncher(activity)) &&
             !Utils.isLauncherIntent(activity.intent)) {
             openDefaultLauncher()
@@ -265,9 +265,9 @@ class LauncherUIManager(
             orientationLocked = false
         }
 
-        if (config.getBackgroundColor() != null) {
+        if (config.backgroundColor != null) {
             try {
-                binding.activityMainContentWrapper.setBackgroundColor(Color.parseColor(config.getBackgroundColor()))
+                binding.activityMainContentWrapper.setBackgroundColor(Color.parseColor(config.backgroundColor))
             } catch (e: Exception) {
                 e.printStackTrace()
                 binding.activityMainContentWrapper.setBackgroundColor(
@@ -281,12 +281,12 @@ class LauncherUIManager(
         }
         updateTitle(config)
 
-        statusBarUpdater.updateControlsState(config.isDisplayStatus(), isDarkBackground())
+        statusBarUpdater.updateControlsState(config.isDisplayStatus, isDarkBackground())
 
         if (mainAppListAdapter == null || needRedrawContentAfterReconfigure) {
             needRedrawContentAfterReconfigure = false
 
-            if (config.getBackgroundImageUrl() != null && config.getBackgroundImageUrl().isNotEmpty()) {
+            if (!config.backgroundImageUrl.isNullOrEmpty()) {
                 if (picasso == null) {
                     val builder = Picasso.Builder(activity)
                     if (BuildConfig.TRUST_ANY_CERTIFICATE) {
@@ -307,16 +307,18 @@ class LauncherUIManager(
                     }
                     builder.listener(object : Picasso.Listener {
                         override fun onImageLoadFailed(picasso: Picasso, uri: android.net.Uri, exception: Exception) {
-                            picasso.load(config.getBackgroundImageUrl())
-                                .networkPolicy(NetworkPolicy.OFFLINE)
-                                .fit()
-                                .centerCrop()
-                                .into(binding.activityMainBackground)
+                            config.backgroundImageUrl?.let {
+                                picasso.load(it)
+                                    .networkPolicy(NetworkPolicy.OFFLINE)
+                                    .fit()
+                                    .centerCrop()
+                                    .into(binding.activityMainBackground)
+                            }
                         }
                     })
                     picasso = builder.build()
                 }
-                picasso!!.load(config.getBackgroundImageUrl())
+                picasso!!.load(config.backgroundImageUrl)
                     .fit()
                     .centerCrop()
                     .into(binding.activityMainBackground)
@@ -367,16 +369,16 @@ class LauncherUIManager(
     }
 
     fun updateTitle(config: ServerConfig) {
-        val titleType = config.getTitle()
+        val titleType = config.title
         if (titleType != null) {
             if (titleType == ServerConfig.TITLE_NONE) {
                 binding.activityMainTitle.visibility = View.GONE
                 return
             }
-            if (config.getTextColor() != null) {
+            if (config.textColor != null) {
                 try {
                     binding.activityMainTitle.setTextColor(
-                        Color.parseColor(settingsHelper.getConfig().getTextColor())
+                        Color.parseColor(config.textColor)
                     )
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -385,13 +387,13 @@ class LauncherUIManager(
             binding.activityMainTitle.visibility = View.VISIBLE
             val imei = DeviceInfoProvider.getImei(activity) ?: ""
             val serial = DeviceInfoProvider.getSerialNumber() ?: ""
-            val ip = SettingsHelper.getInstance(activity).getExternalIp() ?: ""
+            val ip = settingsHelper.getExternalIp() ?: ""
             val titleText = titleType
-                .replace(ServerConfig.TITLE_DEVICE_ID, SettingsHelper.getInstance(activity).getDeviceId())
-                .replace(ServerConfig.TITLE_DESCRIPTION, config.getDescription() ?: "")
-                .replace(ServerConfig.TITLE_CUSTOM1, config.getCustom1() ?: "")
-                .replace(ServerConfig.TITLE_CUSTOM2, config.getCustom2() ?: "")
-                .replace(ServerConfig.TITLE_CUSTOM3, config.getCustom3() ?: "")
+                .replace(ServerConfig.TITLE_DEVICE_ID, settingsHelper.deviceId)
+                .replace(ServerConfig.TITLE_DESCRIPTION, config.description ?: "")
+                .replace(ServerConfig.TITLE_CUSTOM1, config.custom1 ?: "")
+                .replace(ServerConfig.TITLE_CUSTOM2, config.custom2 ?: "")
+                .replace(ServerConfig.TITLE_CUSTOM3, config.custom3 ?: "")
                 .replace(ServerConfig.TITLE_IMEI, imei)
                 .replace(ServerConfig.TITLE_SERIAL, serial)
                 .replace(ServerConfig.TITLE_EXTERNAL_IP, ip)

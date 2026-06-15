@@ -38,6 +38,7 @@ import com.base.launcher.helper.SettingsHelper
 import com.base.launcher.json.Application
 import com.base.launcher.json.PushMessage
 import com.base.launcher.kozen.KozenCommandHandler
+import com.base.launcher.kozen.KozenTerminalFacade
 import com.base.launcher.util.InstallUtils
 import com.base.launcher.util.RemoteLogger
 import com.base.launcher.util.SystemUtils
@@ -77,6 +78,7 @@ object PushNotificationProcessor {
     fun process(message: PushMessage, context: Context) {
         RemoteLogger.log(context, Const.LOG_INFO, "Got Push Message, type ${message.messageType}")
         val kCommand = KozenCommandHandler(context)
+        val payloadJSON = message.getPayloadJSON()
 
         when (message.messageType) {
             PushMessage.TYPE_CONFIG_UPDATED -> {
@@ -87,7 +89,7 @@ object PushNotificationProcessor {
 
             PushMessage.TYPE_RUN_APP -> {
                 // Run application — do not broadcast this message to other apps
-                runApplication(context, message.payloadJSON)
+                runApplication(context, payloadJSON)
                 return
             }
 
@@ -95,7 +97,7 @@ object PushNotificationProcessor {
                 executor.execute {
                     val jsonObject = JSONObject().apply {
                         put("action", "resourceUninstall")
-                        put("payload", message.payloadJSON)
+                        put("payload", payloadJSON)
                     }
                     RemoteLogger.log(context, Const.LOG_INFO, "jsonObject: $jsonObject")
                     kCommand.execute(jsonObject)
@@ -104,17 +106,17 @@ object PushNotificationProcessor {
             }
 
             PushMessage.TYPE_DELETE_FILE -> {
-                executor.execute { deleteFile(context, message.payloadJSON) }
+                executor.execute { deleteFile(context, payloadJSON) }
                 return
             }
 
             PushMessage.TYPE_DELETE_DIR -> {
-                executor.execute { deleteDir(context, message.payloadJSON) }
+                executor.execute { deleteDir(context, payloadJSON) }
                 return
             }
 
             PushMessage.TYPE_PURGE_DIR -> {
-                executor.execute { purgeDir(context, message.payloadJSON) }
+                executor.execute { purgeDir(context, payloadJSON) }
                 return
             }
 
@@ -125,7 +127,7 @@ object PushNotificationProcessor {
             }
 
             PushMessage.TYPE_RUN_COMMAND -> {
-                executor.execute { runCommand(context, message.payloadJSON) }
+                executor.execute { runCommand(context, payloadJSON) }
                 return
             }
 
@@ -146,25 +148,26 @@ object PushNotificationProcessor {
             }
 
             PushMessage.TYPE_INTENT -> {
-                executor.execute { callIntent(context, message.payloadJSON) }
+                executor.execute { callIntent(context, payloadJSON) }
                 return
             }
 
             PushMessage.TYPE_GRANT_PERMISSIONS -> {
-                executor.execute { grantPermissions(context, message.payloadJSON) }
+                executor.execute { grantPermissions(context, payloadJSON) }
                 return
             }
 
             PushMessage.TYPE_DEVICE_ACTION -> {
                 RemoteLogger.log(context, Const.LOG_INFO, "Received TYPE_DEVICE_ACTION push message")
-                kCommand.execute(message.payloadJSON)
+                payloadJSON?.let { kCommand.execute(it) }
                 return
             }
 
             PushMessage.TYPE_DEVICE_BROADCAST -> {
                 RemoteLogger.log(context, Const.LOG_INFO, "Received TYPE_DEVICE_BROADCAST push message")
-                val jsonObject = message.payloadJSON
-                sendBroadCast(context, jsonObject.getString("title"), jsonObject.getString("content"))
+                if (payloadJSON != null) {
+                    sendBroadCast(context, payloadJSON.getString("title"), payloadJSON.getString("content"))
+                }
                 return
             }
 
@@ -175,12 +178,11 @@ object PushNotificationProcessor {
 
             PushMessage.TYPE_UPDATEOTA -> {
                 RemoteLogger.log(context, Const.LOG_INFO, "Received TYPE_UPDATEOTA push message")
-                val jsonObject = message.payloadJSON
-                if (jsonObject != null) {
-                    jsonObject.put("action", "updateOta")
+                if (payloadJSON != null) {
+                    payloadJSON.put("action", "updateOta")
                     executor.execute {
                         try {
-                            val otaUrl = jsonObject.getString("otaUrl")
+                            val otaUrl = payloadJSON.getString("otaUrl")
                             RemoteLogger.log(context, Const.LOG_INFO, "Starting OTA download: $otaUrl")
                             showToast(context, "Starting OTA download...")
 
@@ -203,8 +205,7 @@ object PushNotificationProcessor {
 
                             // 2) Call Kozen OTA API — only after download completed
                             showToast(context, "Updating firmware...")
-                            kCommand.execute(jsonObject)
-                            val rm = TerminalManager.INSTANCE.resourceManager
+                            kCommand.execute(payloadJSON)
                             val otaListener = object : OnUpdateOTAListener {
                                 override fun onSuccess() {
                                     showToast(context, "OTA update successful")
@@ -224,7 +225,7 @@ object PushNotificationProcessor {
                                 context, Const.LOG_INFO,
                                 "Calling updateOTAWithListener with path: $localPath"
                             )
-                            val ret = rm.updateOTAWithListener(localPath, otaListener)
+                            val ret = KozenTerminalFacade.get().updateOTAWithListener(localPath, otaListener)
                             RemoteLogger.log(
                                 context, Const.LOG_INFO,
                                 "updateOTAWithListener returned: $ret"
@@ -243,7 +244,7 @@ object PushNotificationProcessor {
             }
 
             else -> {
-                val textObj = message.payloadJSON.toString()
+                val textObj = payloadJSON.toString()
                 RemoteLogger.log(context, Const.LOG_INFO, "Else flow result: $textObj")
                 Toast.makeText(context, textObj, Toast.LENGTH_LONG).show()
             }
@@ -251,9 +252,8 @@ object PushNotificationProcessor {
 
         // Send broadcast to all plugins
         val intent = Intent(Const.INTENT_PUSH_NOTIFICATION_PREFIX + message.messageType)
-        val jsonObject = message.payloadJSON
-        if (jsonObject != null) {
-            intent.putExtra(Const.INTENT_PUSH_NOTIFICATION_EXTRA, jsonObject.toString())
+        if (payloadJSON != null) {
+            intent.putExtra(Const.INTENT_PUSH_NOTIFICATION_EXTRA, payloadJSON.toString())
         }
         context.sendBroadcast(intent)
     }
@@ -279,9 +279,9 @@ object PushNotificationProcessor {
 
         OTA_HTTP_CLIENT.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
-                throw IOException("Unexpected HTTP code ${response.code}")
+                throw IOException("Unexpected HTTP code ${response.code()}")
             }
-            val body = response.body ?: throw IOException("Empty response body")
+            val body = response.body() ?: throw IOException("Empty response body")
             val contentLength = body.contentLength() // can be -1 if unknown
             RemoteLogger.log(
                 context, Const.LOG_INFO,
@@ -554,7 +554,7 @@ object PushNotificationProcessor {
             // By default, grant permissions to all packages that have a URL
             apps = config.applications
                 .filter { Application.TYPE_APP == it.type && it.url != null && it.pkg != null }
-                .map { it.pkg }
+                .map { it.pkg!! }
                 .toMutableList()
         }
 

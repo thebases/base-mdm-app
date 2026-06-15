@@ -2,12 +2,12 @@ package com.base.launcher.json
 
 import org.json.JSONObject
 
-class PushMessageJson : PushMessage() {
+class PushMessageJson : PushMessage {
     private var payloadJSON: JSONObject? = null
 
-    constructor()
+    constructor() : super()
 
-    constructor(messageType: String, payloadJSON: JSONObject) {
+    constructor(messageType: String, payloadJSON: JSONObject) : super() {
         this.messageType = messageType
         this.payloadJSON = payloadJSON
     }

@@ -107,8 +107,9 @@ class InitialSetupActivity : BaseActivity(), ConfigUpdater.UINotifier {
                 Utils.autoGrantRequestedPermissions(this, packageName, config.appPermissions, true)
             }
 
+            val runDefaultLauncher = config.runDefaultLauncher
             if (Utils.isDeviceOwner(this) &&
-                (config.runDefaultLauncher == null || !config.runDefaultLauncher)
+                (runDefaultLauncher == null || !runDefaultLauncher)
             ) {
                 // As per the documentation, setting the default preferred activity should not be done on the main thread
                 CoroutineScope(Dispatchers.Main).launch {

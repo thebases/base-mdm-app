@@ -50,7 +50,7 @@ object XapkUtils {
     }
 
     @JvmStatic
-    fun install(context: Context, files: List<File>?, packageName: String, errorHandler: InstallUtils.InstallErrorHandler?) {
+    fun install(context: Context, files: List<File>?, packageName: String?, errorHandler: InstallUtils.InstallErrorHandler?) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return
         if (files == null) {
             RemoteLogger.log(context, Const.LOG_WARN, "Failed to unpack XAPK for $packageName - ignoring installation")
@@ -62,7 +62,7 @@ object XapkUtils {
             Log.i(Const.LOG_TAG, "Installing XAPK $packageName")
             val packageInstaller = context.packageManager.packageInstaller
             val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL)
-            if (packageName != null) params.setAppPackageName(packageName)
+            packageName?.let { params.setAppPackageName(it) }
             params.setSize(totalSize)
             val sessionId = packageInstaller.createSession(params)
             for (file in files) {

@@ -97,8 +97,8 @@ class ConfigUpdater {
         }
 
         @JvmStatic
-        fun checkUpdateNetworkRestriction(config: ServerConfig, context: Context): Boolean {
-            if ("wifi" != config.downloadUpdates) {
+        fun checkUpdateNetworkRestriction(config: ServerConfig?, context: Context): Boolean {
+            if (config == null || "wifi" != config.downloadUpdates) {
                 return true
             }
             val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -107,10 +107,10 @@ class ConfigUpdater {
         }
 
         @JvmStatic
-        fun checkAppUpdateTimeRestriction(config: ServerConfig): Boolean {
-            if (config.appUpdateFrom == null || config.appUpdateTo == null) {
-                return true
-            }
+        fun checkAppUpdateTimeRestriction(config: ServerConfig?): Boolean {
+            if (config == null) return true
+            val appUpdateFrom = config.appUpdateFrom ?: return true
+            val appUpdateTo = config.appUpdateTo ?: return true
 
             val calendar: Calendar = GregorianCalendar.getInstance()
             calendar.time = Date()
@@ -118,14 +118,14 @@ class ConfigUpdater {
             var minute = calendar.get(Calendar.MINUTE)
 
             var appUpdateFromHour = 0
-            try { appUpdateFromHour = config.appUpdateFrom.substring(0, 2).toInt() } catch (e: Exception) { e.printStackTrace() }
+            try { appUpdateFromHour = appUpdateFrom.substring(0, 2).toInt() } catch (e: Exception) { e.printStackTrace() }
             var appUpdateFromMinute = 0
-            try { appUpdateFromMinute = config.appUpdateFrom.substring(3).toInt() } catch (e: Exception) { e.printStackTrace() }
+            try { appUpdateFromMinute = appUpdateFrom.substring(3).toInt() } catch (e: Exception) { e.printStackTrace() }
 
             var appUpdateToHour = 0
-            try { appUpdateToHour = config.appUpdateTo.substring(0, 2).toInt() } catch (e: Exception) { e.printStackTrace() }
+            try { appUpdateToHour = appUpdateTo.substring(0, 2).toInt() } catch (e: Exception) { e.printStackTrace() }
             var appUpdateToMinute = 0
-            try { appUpdateToMinute = config.appUpdateTo.substring(3).toInt() } catch (e: Exception) { e.printStackTrace() }
+            try { appUpdateToMinute = appUpdateTo.substring(3).toInt() } catch (e: Exception) { e.printStackTrace() }
 
             minute += 60 * hour
             appUpdateFromMinute += 60 * appUpdateFromHour
@@ -201,8 +201,8 @@ class ConfigUpdater {
         settingsHelper = SettingsHelper.getInstance(context.applicationContext)
 
         val cfg = settingsHelper.config
-        if (cfg != null && cfg.restrictions != null) {
-            Utils.releaseUserRestrictions(context, cfg.restrictions)
+        if (cfg != null) {
+            cfg.restrictions?.let { Utils.releaseUserRestrictions(context, it) }
             // Explicitly release restrictions of installing/uninstalling apps
             Utils.releaseUserRestrictions(context, "no_install_apps,no_uninstall_apps")
         }
@@ -221,7 +221,7 @@ class ConfigUpdater {
                 }
                 Const.TASK_ERROR -> {
                     RemoteLogger.log(context, Const.LOG_WARN, "Failed to update config: server error")
-                    uiNotifier?.onConfigUpdateServerError(serverConfigTask.errorText)
+                    uiNotifier?.onConfigUpdateServerError(serverConfigTask.errorText ?: "")
                 }
                 Const.TASK_NETWORK_ERROR -> {
                     RemoteLogger.log(context, Const.LOG_WARN, "Failed to update config: network error")
@@ -230,17 +230,18 @@ class ConfigUpdater {
                         retry = false
                         handler.postDelayed({ updateConfig(context, uiNotifier, userInteraction) }, 15000)
                     } else {
-                        if (settingsHelper.config != null && !userInteraction) {
-                            if (uiNotifier != null && settingsHelper.config!!.isShowWifi) {
+                        val config = settingsHelper.config
+                        if (config != null && !userInteraction) {
+                            if (uiNotifier != null && config.isShowWifi) {
                                 // Show network error dialog with Wi-Fi settings
                                 // if it is required by the web panel
                                 // so the user can set up WiFi even in kiosk mode
-                                uiNotifier.onConfigUpdateNetworkError(serverConfigTask.errorText)
+                                uiNotifier.onConfigUpdateNetworkError(serverConfigTask.errorText ?: "")
                             } else {
                                 updateRemoteLogConfig()
                             }
                         } else {
-                            uiNotifier?.onConfigUpdateNetworkError(serverConfigTask.errorText)
+                            uiNotifier?.onConfigUpdateNetworkError(serverConfigTask.errorText ?: "")
                         }
                     }
                 }
@@ -371,11 +372,11 @@ class ConfigUpdater {
     private fun checkFactoryReset() {
         Log.d(Const.LOG_TAG, "checkFactoryReset() called")
         val config: ServerConfig? = settingsHelper.config
-        if (config != null && config.factoryReset != null && config.factoryReset == true) {
+        if (config != null && config.factoryReset == true) {
             // We got a factory reset request, let's confirm and erase everything!
             RemoteLogger.log(context, Const.LOG_INFO, "Device reset by server request")
             val deviceInfo: DeviceInfo = DeviceInfoProvider.getDeviceInfo(context, true, true)
-            deviceInfo.setFactoryReset(Utils.checkAdminMode(context))
+            deviceInfo.factoryReset = Utils.checkAdminMode(context)
             ConfirmDeviceResetTask(context).execute(deviceInfo) { result ->
                 // Do a factory reset if we can
                 if (result != Const.TASK_SUCCESS) {
@@ -422,8 +423,9 @@ class ConfigUpdater {
 
     private fun checkPasswordReset() {
         val config: ServerConfig? = settingsHelper.config
-        if (config != null && config.passwordReset != null) {
-            if (Utils.passwordReset(context, config.passwordReset)) {
+        val passwordReset = config?.passwordReset
+        if (config != null && passwordReset != null) {
+            if (Utils.passwordReset(context, passwordReset)) {
                 RemoteLogger.log(context, Const.LOG_INFO, "Password successfully changed")
             } else {
                 RemoteLogger.log(context, Const.LOG_WARN, "Failed to reset password")
@@ -441,7 +443,8 @@ class ConfigUpdater {
         if (Utils.isDeviceOwner(context) && config != null) {
             // "Run default launcher" means we should not set Base MDM as a default launcher
             // and clear the setting if it has been already set
-            val needSetLauncher = (config.runDefaultLauncher == null || !config.runDefaultLauncher)
+            val runDefaultLauncher = config.runDefaultLauncher
+            val needSetLauncher = (runDefaultLauncher == null || !runDefaultLauncher)
             val defaultLauncher = Utils.getDefaultLauncher(context)
 
             // As per the documentation, setting the default preferred activity should not be done on the main thread
@@ -501,32 +504,35 @@ class ConfigUpdater {
                 var fileStatus: RemoteFileStatus? = null
 
                 if (remoteFile.isRemove) {
-                    RemoteLogger.log(context, Const.LOG_DEBUG, "Removing file: ${remoteFile.path}")
-                    val file = InstallUtils.getFileByPath(remoteFile.path)
+                    val path = remoteFile.path ?: return@execute
+                    RemoteLogger.log(context, Const.LOG_DEBUG, "Removing file: $path")
+                    val file = InstallUtils.getFileByPath(path)
                     try {
                         if (file.exists()) {
                             file.delete()
                         }
                         RemoteFileTable.deleteByPath(
                             DatabaseHelper.instance(context).writableDatabase,
-                            remoteFile.path
+                            path
                         )
                     } catch (e: Exception) {
                         RemoteLogger.log(
                             context, Const.LOG_WARN,
-                            "Failed to remove file: ${remoteFile.path}: ${e.message}"
+                            "Failed to remove file: $path: ${e.message}"
                         )
                         e.printStackTrace()
                     }
                 } else if (remoteFile.url != null) {
+                    val url = remoteFile.url!!
+                    val path = remoteFile.path ?: return@execute
                     uiNotifier?.let { handler.post { it.onFileDownloading(remoteFile) } }
 
                     fileStatus = RemoteFileStatus()
                     fileStatus.remoteFile = remoteFile
 
                     val dbHelper = DatabaseHelper.instance(context)
-                    val lastDownload = DownloadTable.selectByPath(dbHelper.readableDatabase, remoteFile.path)
-                    if (!canDownload(lastDownload, remoteFile.path)) {
+                    val lastDownload = DownloadTable.selectByPath(dbHelper.readableDatabase, path)
+                    if (!canDownload(lastDownload, path)) {
                         val finalFileStatus = fileStatus
                         handler.post { handleFileStatus(finalFileStatus) }
                         return@execute
@@ -534,22 +540,22 @@ class ConfigUpdater {
 
                     var file: File? = null
                     try {
-                        RemoteLogger.log(context, Const.LOG_DEBUG, "Downloading file: ${remoteFile.path}")
-                        file = InstallUtils.downloadFile(context, remoteFile.url) { progress, total, current ->
+                        RemoteLogger.log(context, Const.LOG_DEBUG, "Downloading file: $path")
+                        file = InstallUtils.downloadFile(context, url) { progress, total, current ->
                             uiNotifier?.onDownloadProgress(progress, total, current)
                         }
                     } catch (e: Exception) {
                         RemoteLogger.log(
                             context, Const.LOG_WARN,
-                            "Failed to download file ${remoteFile.path}: ${e.message}"
+                            "Failed to download file $path: ${e.message}"
                         )
                         e.printStackTrace()
-                        saveFailedAttempt(context, lastDownload, remoteFile.url, remoteFile.path, false, false)
+                        saveFailedAttempt(context, lastDownload, url, path, false, false)
                     }
 
                     if (file != null) {
                         fileStatus.downloaded = true
-                        val finalFile = InstallUtils.getFileByPath(remoteFile.path)
+                        val finalFile = InstallUtils.getFileByPath(path)
                         try {
                             if (finalFile.exists()) {
                                 finalFile.delete()
@@ -558,24 +564,27 @@ class ConfigUpdater {
                                 FileUtils.moveFile(file, finalFile)
                             } else {
                                 var imei = DeviceInfoProvider.getImei(context, 0)
+                                val cfg = settingsHelper.config
                                 if (imei == null || imei.isEmpty()) {
-                                    imei = settingsHelper.config.imei
+                                    imei = cfg?.imei
                                 }
-                                createFileFromTemplate(
-                                    file, finalFile,
-                                    settingsHelper.deviceId, imei,
-                                    settingsHelper.config
-                                )
+                                if (cfg != null) {
+                                    createFileFromTemplate(
+                                        file, finalFile,
+                                        settingsHelper.deviceId, imei,
+                                        cfg
+                                    )
+                                }
                             }
                             RemoteFileTable.insert(dbHelper.writableDatabase, remoteFile)
                             fileStatus.installed = true
                             if (lastDownload != null) {
-                                DownloadTable.deleteByPath(dbHelper.writableDatabase, lastDownload.path)
+                                DownloadTable.deleteByPath(dbHelper.writableDatabase, path)
                             }
                         } catch (e: Exception) {
                             RemoteLogger.log(
                                 context, Const.LOG_WARN,
-                                "Failed to create file ${remoteFile.path}: ${e.message}"
+                                "Failed to create file $path: ${e.message}"
                             )
                             e.printStackTrace()
                             try {
@@ -586,7 +595,7 @@ class ConfigUpdater {
                                 e1.printStackTrace()
                             }
                             fileStatus.installed = false
-                            saveFailedAttempt(context, lastDownload, remoteFile.url, remoteFile.path, true, false)
+                            saveFailedAttempt(context, lastDownload, url, path, true, false)
                         }
                     } else {
                         fileStatus.downloaded = false
@@ -654,7 +663,7 @@ class ConfigUpdater {
             RemoteLogger.log(context, Const.LOG_INFO, "Skip download due to previous install failure: $objectId")
             return false
         }
-        val config = SettingsHelper.getInstance(context).config
+        val config = settingsHelper.config ?: return true
         if ("limited" == config.downloadUpdates) {
             val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
             val activeNetwork: NetworkInfo? = cm.activeNetworkInfo
@@ -701,11 +710,12 @@ class ConfigUpdater {
 
     // Here we avoid ConcurrentModificationException by executing all operations with applicationForInstall list in a main thread
     private fun loadAndInstallApplications() {
-        val isGoodTimeForAppUpdate = userInteraction || checkAppUpdateTimeRestriction(settingsHelper.config)
+        val config = settingsHelper.config
+        val isGoodTimeForAppUpdate = userInteraction || checkAppUpdateTimeRestriction(config)
         if (applicationsForInstall.size > 0 && !isGoodTimeForAppUpdate) {
-            RemoteLogger.log(context, Const.LOG_DEBUG, "Application update not enabled. Scheduled time: ${settingsHelper.config.appUpdateFrom}")
+            RemoteLogger.log(context, Const.LOG_DEBUG, "Application update not enabled. Scheduled time: ${config?.appUpdateFrom}")
         }
-        val isGoodNetworkForUpdate = userInteraction || checkUpdateNetworkRestriction(settingsHelper.config, context)
+        val isGoodNetworkForUpdate = userInteraction || checkUpdateNetworkRestriction(config ?: return, context)
         if (applicationsForInstall.size > 0 && !isGoodNetworkForUpdate) {
             RemoteLogger.log(context, Const.LOG_DEBUG, "Application update not enabled: waiting for WiFi connection")
         }
@@ -716,9 +726,10 @@ class ConfigUpdater {
                 var applicationStatus: ApplicationStatus? = null
 
                 if (application.isRemove) {
-                    RemoteLogger.log(context, Const.LOG_DEBUG, "Removing app: ${application.pkg}")
+                    val pkg = application.pkg ?: return@execute
+                    RemoteLogger.log(context, Const.LOG_DEBUG, "Removing app: $pkg")
                     uiNotifier?.let { handler.post { it.onAppRemoving(application) } }
-                    uninstallApplication(application.pkg)
+                    uninstallApplication(pkg)
 
                 } else if (application.url == null) {
                     handler.post {
@@ -727,23 +738,27 @@ class ConfigUpdater {
                     }
                     return@execute
 
-                } else if (application.url.startsWith("market://details")) {
-                    RemoteLogger.log(context, Const.LOG_INFO, "Installing app ${application.pkg} from Google Play")
-                    installApplicationFromPlayMarket(application.url, application.pkg)
+                } else if (application.url!!.startsWith("market://details")) {
+                    val url = application.url!!
+                    val pkg = application.pkg ?: return@execute
+                    RemoteLogger.log(context, Const.LOG_INFO, "Installing app $pkg from Google Play")
+                    installApplicationFromPlayMarket(url, pkg)
                     applicationStatus = ApplicationStatus()
                     applicationStatus.application = application
                     applicationStatus.installed = true
 
-                } else if (application.url.startsWith("file:///")) {
-                    RemoteLogger.log(context, Const.LOG_INFO, "Installing app ${application.pkg} from SD card")
+                } else if (application.url!!.startsWith("file:///")) {
+                    val url = application.url!!
+                    val pkg = application.pkg ?: return@execute
+                    RemoteLogger.log(context, Const.LOG_INFO, "Installing app $pkg from SD card")
                     applicationStatus = ApplicationStatus()
                     applicationStatus.application = application
                     try {
-                        Log.d(Const.LOG_TAG, "URL: ${application.url}")
-                        val file = File(URL(application.url).toURI())
+                        Log.d(Const.LOG_TAG, "URL: $url")
+                        val file = File(URL(url).toURI())
                         Log.d(Const.LOG_TAG, "Path: ${file.absolutePath}")
                         uiNotifier?.let { handler.post { it.onAppInstalling(application) } }
-                        installApplication(file, application.pkg, application.version)
+                        installApplication(file, pkg, application.version)
                         applicationStatus.installed = true
                     } catch (e: Exception) {
                         e.printStackTrace()
@@ -751,15 +766,17 @@ class ConfigUpdater {
                     }
 
                 } else {
+                    val url = application.url!!
+                    val pkg = application.pkg ?: return@execute
                     uiNotifier?.let { handler.post { it.onAppDownloading(application) } }
 
                     applicationStatus = ApplicationStatus()
                     applicationStatus.application = application
 
                     val dbHelper = DatabaseHelper.instance(context)
-                    val tempPath = InstallUtils.getAppTempPath(context, application.url)
+                    val tempPath = InstallUtils.getAppTempPath(context, url)
                     val lastDownload = DownloadTable.selectByPath(dbHelper.readableDatabase, tempPath)
-                    if (!canDownload(lastDownload, application.pkg)) {
+                    if (!canDownload(lastDownload, pkg)) {
                         applicationStatus.installed = false
                         val finalApplicationStatus = applicationStatus
                         handler.post { handleApplicationStatus(finalApplicationStatus) }
@@ -768,19 +785,19 @@ class ConfigUpdater {
 
                     var file: File? = null
                     try {
-                        RemoteLogger.log(context, Const.LOG_DEBUG, "Downloading app: ${application.pkg}")
-                        file = InstallUtils.downloadFile(context, application.url) { progress, total, current ->
+                        RemoteLogger.log(context, Const.LOG_DEBUG, "Downloading app: $pkg")
+                        file = InstallUtils.downloadFile(context, url) { progress, total, current ->
                             uiNotifier?.onDownloadProgress(progress, total, current)
                         }
                     } catch (e: Exception) {
-                        RemoteLogger.log(context, Const.LOG_WARN, "Failed to download app ${application.pkg}: ${e.message}")
+                        RemoteLogger.log(context, Const.LOG_WARN, "Failed to download app $pkg: ${e.message}")
                         e.printStackTrace()
-                        saveFailedAttempt(context, lastDownload, application.url, tempPath, false, false)
+                        saveFailedAttempt(context, lastDownload, url, tempPath, false, false)
                     }
 
                     if (file != null) {
                         uiNotifier?.let { handler.post { it.onAppInstalling(application) } }
-                        installApplication(file, application.pkg, application.version)
+                        installApplication(file, pkg, application.version)
                         applicationStatus.installed = true
                         if (lastDownload != null) {
                             DownloadTable.deleteByPath(dbHelper.writableDatabase, lastDownload.path)
@@ -834,8 +851,8 @@ class ConfigUpdater {
         val config = settingsHelper.config
         // As per the documentation, setting the default preferred activity should not be done on the main thread
         backgroundExecutor.execute {
-            if (Utils.isDeviceOwner(context) && config.actions != null && config.actions.size > 0) {
-                for (action: Action in config.actions) {
+            if (Utils.isDeviceOwner(context) && config?.actions != null && config.actions!!.isNotEmpty()) {
+                for (action: Action in config.actions!!) {
                     Utils.setAction(context, action)
                 }
             }
@@ -1061,7 +1078,8 @@ class ConfigUpdater {
         }
     }
 
-    private fun uninstallApplication(packageName: String) {
+    private fun uninstallApplication(packageName: String?) {
+        if (packageName == null) return
         if (Utils.isDeviceOwner(context) || BuildConfig.SYSTEM_PRIVILEGES) {
             RemoteLogger.log(context, Const.LOG_INFO, "Silently uninstall app $packageName")
             InstallUtils.silentUninstallApplication(context, packageName)
